@@ -5,6 +5,29 @@ import os
 from difflib import SequenceMatcher
 from tabulate import tabulate
 
+author_alias = {
+    "lvfr": "LatinVFR",
+    "Alex": "BEAUTIFUL MODEL of the WORLD",
+    "Davide F.": "Tailstrike Designs",
+    "ManfredSpatz": "Sim Wings",
+    "L.Barelli": "Barelli MSFS Addon",
+    "Stairport": "Aerosoft",
+    "LimeSim": "Aerosoft",
+    "LIMESIM": "Aerosoft",
+    "jspco": "Just Flight",
+}
+
+author_exclude = [
+    "FSLTL",
+    "AIGTech",
+    "Sequal32",
+    "AmbitiousPilots",
+    "Henrik Nielsen",
+    "Working Title Simulations",
+    "FlyByWire Simulations",
+    "UnitDeath",
+]
+
 
 def get_addons_from_simplaza():
     url = "https://simplaza.org/torrent-master-list/"
@@ -22,6 +45,7 @@ def get_addons_from_simplaza():
         link = addon['href']
         author = addon.text.split(" – ")[0]
         title = ""
+        version = "No version"
         for word in addon.text.split(" – ")[1].split():
             if word[0] == 'v' and word[1].isnumeric():
                 version = word[1:]
@@ -29,7 +53,6 @@ def get_addons_from_simplaza():
                 break
             else:
                 title += word + " "
-
         addons.append({'author': author, 'title': title, 'version': version, 'link': link})
 
     return addons
@@ -68,18 +91,25 @@ def remove_0s(version):
 
 def get_results(n):
     for local_addon in get_local_addons("E:/MSFS Addons"):
+        if local_addon['author'] in author_exclude:
+            continue
         if (local_addon['title'] == '' or local_addon['title'] == 'No title') or (
                 local_addon['version'] == '' or local_addon['version'] == 'No version'):
             continue
         ratio = 0
         matching_addon = None
-        local_author = local_addon['author'] \
-            .replace(" ", "") \
-            .replace(".", "") \
-            .replace("-", "") \
-            .replace("_", "") \
-            .replace("/", "") \
-            .lower()
+
+        if local_addon['author'] in author_alias:
+            local_author = author_alias[local_addon['author']].replace(" ", "").lower()
+        else:
+            local_author = local_addon['author'] \
+                .replace(" ", "") \
+                .replace(".", "") \
+                .replace("-", "") \
+                .replace("_", "") \
+                .replace("/", "") \
+                .lower()
+
         for remote_addon in get_addons_from_simplaza():
             remote_author = remote_addon['author'] \
                 .replace(" ", "") \
@@ -88,7 +118,6 @@ def get_results(n):
                 .replace("_", "") \
                 .replace("/", "") \
                 .lower()
-            # if author is not the same or author name contains each other, skip
             if local_author != remote_author and local_author not in remote_author and remote_author not in local_author:
                 continue
             else:
