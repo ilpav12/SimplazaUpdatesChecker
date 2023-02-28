@@ -18,6 +18,14 @@ author_alias = {
     "Origami Studios": "iniBuilds",
 }
 
+title_alias = {
+    "736": "737-600",
+    "737": "737-700",
+    "738": "737-800",
+    "739": "737-900",
+    "Rimini Airport": "LIPR Federico Fellini International Airport",
+}
+
 author_exclude = [
     "FSLTL",
     "AIGTech",
@@ -28,6 +36,13 @@ author_exclude = [
     "FlyByWire Simulations",
     "UnitDeath",
     "My Company",
+]
+
+title_exclude = [
+    "livery",
+    "liveries",
+    "cache",
+    "AIRAC Cycle Base",
 ]
 
 
@@ -48,13 +63,17 @@ def get_addons_from_simplaza():
         author = addon.text.split(" – ")[0]
         title = ""
         version = "No version"
-        for word in addon.text.split(" – ")[1].split():
-            if word[0] == 'v' and word[1].isnumeric():
-                version = word[1:]
-                title = title[:-1]
-                break
-            else:
-                title += word + " "
+        if "Navigraph – Navdata MSFS 2020 AIRAC Cycle" in addon.text:
+            title = "Navdata MSFS 2020 AIRAC Cycle"
+            version = addon.text.replace("Navigraph – Navdata MSFS 2020 AIRAC Cycle", "")
+        else:
+            for word in addon.text.split(" – ")[1].split():
+                if word[0] == 'v' and word[1].isnumeric():
+                    version = word[1:]
+                    title = title[:-1]
+                    break
+                else:
+                    title += word + " "
         addons.append({'author': author, 'title': title, 'version': version, 'link': link})
 
     return addons
@@ -72,6 +91,8 @@ def get_local_addons(folder, addons=[]):
                 'title': manifest.get('title', 'No title'),
                 'version': manifest.get('version', manifest.get('package_version', 'No version'))
             }
+            if "AIRAC Cycle" in addon['title']:
+                addon['version'] = addon['title'].replace("AIRAC Cycle", "").replace(".", " ")
             addons.append(addon)
             break
         else:
@@ -91,13 +112,21 @@ def remove_0s(version):
     return version
 
 
-def get_results(n):
-    for local_addon in get_local_addons("E:/MSFS Addons"):
+def get_results(n, folder):
+    for local_addon in get_local_addons(folder):
         if local_addon['author'] in author_exclude:
+            continue
+        if any(word in local_addon['title'].lower() for word in title_exclude) or local_addon['title'] in title_exclude:
             continue
         if (local_addon['title'] == '' or local_addon['title'] == 'No title') or (
                 local_addon['version'] == '' or local_addon['version'] == 'No version'):
             continue
+
+        for word in local_addon['title'].split():
+            if word in title_alias:
+                local_addon['title'] = local_addon['title'].replace(word, title_alias[word])
+        if local_addon['title'] in title_alias:
+            local_addon['title'] = title_alias[local_addon['title']]
         ratio = 0
         matching_addon = None
 
@@ -113,7 +142,7 @@ def get_results(n):
                 .lower()
 
         for remote_addon in get_addons_from_simplaza():
-            if remote_addon['version'] < local_addon['version']:
+            if remote_addon['version'] < local_addon['version'] or remote_addon['version'] == 'No version':
                 continue
 
             remote_author = remote_addon['author'] \
@@ -147,11 +176,37 @@ def get_results(n):
             print()
 
 
-print("Choose an option for the results:")
-print("1. Show all addons")
-print("2. Show only addons with updates")
-print("3. Show only addons with no match")
-option = input("Option: ")
-print()
+def get_user_input():
+    print("Check addons in the current folder? (Y/N)")
+    option = input("Option: ")
 
-get_results(int(option))
+    if option.lower() == 'y':
+        print()
+        folder = os.getcwd()
+    elif option.lower() == 'n':
+        print()
+        print("Enter the folder path:")
+        folder = input("Path: ")
+        print()
+        if not os.path.isdir(folder):
+            print("Invalid folder")
+            get_user_input()
+    else:
+        print("Invalid option")
+        get_user_input()
+
+    print("Choose an option for the results:")
+    print("1. Show all addons")
+    print("2. Show only addons with updates")
+    print("3. Show only addons with no match")
+    option = input("Option: ")
+    print()
+
+    if option.isnumeric() and 1 <= int(option) <= 3:
+        get_results(int(option), folder)
+    else:
+        print("Invalid option")
+        get_user_input()
+
+
+get_user_input()
