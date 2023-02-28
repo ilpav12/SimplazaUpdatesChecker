@@ -15,6 +15,7 @@ author_alias = {
     "LimeSim": "Aerosoft",
     "LIMESIM": "Aerosoft",
     "jspco": "Just Flight",
+    "Origami Studios": "iniBuilds",
 }
 
 author_exclude = [
@@ -26,6 +27,7 @@ author_exclude = [
     "Working Title Simulations",
     "FlyByWire Simulations",
     "UnitDeath",
+    "My Company",
 ]
 
 
@@ -111,6 +113,9 @@ def get_results(n):
                 .lower()
 
         for remote_addon in get_addons_from_simplaza():
+            if remote_addon['version'] < local_addon['version']:
+                continue
+
             remote_author = remote_addon['author'] \
                 .replace(" ", "") \
                 .replace(".", "") \
