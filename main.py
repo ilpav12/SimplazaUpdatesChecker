@@ -43,6 +43,8 @@ title_exclude = [
     "liveries",
     "cache",
     "AIRAC Cycle Base",
+    "aerosoft-data-exchange",
+    "Aerosoft-VDGS-Driver",
 ]
 
 
