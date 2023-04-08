@@ -206,6 +206,8 @@ def get_user_input():
 
     if option.isnumeric() and 1 <= int(option) <= 3:
         get_results(int(option), folder)
+        print("Press any key to exit")
+        input()
     else:
         print("Invalid option")
         get_user_input()
