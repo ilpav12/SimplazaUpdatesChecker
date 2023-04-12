@@ -20,7 +20,8 @@
         "737": "737-700",
         "738": "737-800",
         "739": "737-900",
-        "Rimini Airport": "LIPR Federico Fellini International Airport"
+        "Rimini Airport": "LIPR Federico Fellini International Airport",
+        "Lisbon Airport": "LPPT Lisbon / Humberto Delgado Airport"
     },
     "author_exclude": [
         "FSLTL",
@@ -41,6 +42,6 @@
         "aerosoft-data-exchange",
         "Aerosoft-VDGS-Driver",
         "LIMC",
-        "UKLL Lviv International Airport",
+        "UKLL Lviv International Airport"
     ]
 }
