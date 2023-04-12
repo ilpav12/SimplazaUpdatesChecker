@@ -5,47 +5,17 @@ import os
 from difflib import SequenceMatcher
 from tabulate import tabulate
 
-author_alias = {
-    "lvfr": "LatinVFR",
-    "Alex": "BEAUTIFUL MODEL of the WORLD",
-    "Davide F.": "Tailstrike Designs",
-    "ManfredSpatz": "Sim Wings",
-    "L.Barelli": "Barelli MSFS Addon",
-    "Stairport": "Aerosoft",
-    "LimeSim": "Aerosoft",
-    "LIMESIM": "Aerosoft",
-    "jspco": "Just Flight",
-    "Origami Studios": "iniBuilds",
-}
+settings, author_alias, title_alias, author_exclude, title_exclude = {}, {}, {}, [], []
 
-title_alias = {
-    "736": "737-600",
-    "737": "737-700",
-    "738": "737-800",
-    "739": "737-900",
-    "Rimini Airport": "LIPR Federico Fellini International Airport",
-}
+if os.path.isfile('options.json'):
+    with open('options.json') as json_options:
+        options = json.load(json_options)
 
-author_exclude = [
-    "FSLTL",
-    "AIGTech",
-    "Sequal32",
-    "AmbitiousPilots",
-    "Henrik Nielsen",
-    "Working Title Simulations",
-    "FlyByWire Simulations",
-    "UnitDeath",
-    "My Company",
-]
-
-title_exclude = [
-    "livery",
-    "liveries",
-    "cache",
-    "AIRAC Cycle Base",
-    "aerosoft-data-exchange",
-    "Aerosoft-VDGS-Driver",
-]
+        settings = options.get('settings')
+        author_alias = options.get('author_alias')
+        title_alias = options.get('title_alias')
+        author_exclude = options.get('author_exclude')
+        title_exclude = options.get('title_exclude')
 
 
 def get_addons_from_simplaza():
@@ -179,30 +149,36 @@ def get_results(n, folder):
 
 
 def get_user_input():
-    print("Check addons in the current folder? (Y/N)")
-    option = input("Option: ")
-
-    if option.lower() == 'y':
-        print()
-        folder = os.getcwd()
-    elif option.lower() == 'n':
-        print()
-        print("Enter the folder path:")
-        folder = input("Path: ")
-        print()
-        if not os.path.isdir(folder):
-            print("Invalid folder")
-            get_user_input()
+    if settings.get('folder'):
+        folder = settings['folder']
     else:
-        print("Invalid option")
-        get_user_input()
+        print("Check addons in the current folder? (Y/N)")
+        option = input("Option: ")
 
-    print("Choose an option for the results:")
-    print("1. Show all addons")
-    print("2. Show only addons with updates")
-    print("3. Show only addons with no match")
-    option = input("Option: ")
-    print()
+        if option.lower() == 'y':
+            print()
+            folder = os.getcwd()
+        elif option.lower() == 'n':
+            print()
+            print("Enter the folder path:")
+            folder = input("Path: ")
+            print()
+            if not os.path.isdir(folder):
+                print("Invalid folder")
+                get_user_input()
+        else:
+            print("Invalid option")
+            get_user_input()
+
+    if settings.get('result_option'):
+        option = settings['result_option']
+    else:
+        print("Choose an option for the results:")
+        print("1. Show all addons")
+        print("2. Show only addons with updates")
+        print("3. Show only addons with no match")
+        option = input("Option: ")
+        print()
 
     if option.isnumeric() and 1 <= int(option) <= 3:
         get_results(int(option), folder)
