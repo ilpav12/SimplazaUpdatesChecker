@@ -2,7 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import os
-from difflib import SequenceMatcher
+# from difflib import SequenceMatcher
+from rapidfuzz import fuzz
 from tabulate import tabulate
 
 settings, author_alias, title_alias, author_exclude, title_exclude = {}, {}, {}, [], []
@@ -53,7 +54,10 @@ def get_addons_from_simplaza():
 
 # print(get_addons_from_simplaza())
 
-def get_local_addons(folder, addons=[]):
+def get_local_addons(folder, addons=None):
+    if addons is None:
+        addons = []
+
     for item in os.listdir(folder):
         if 'manifest.json' in os.listdir(folder):
             f = open(folder + "/manifest.json", 'r', encoding="cp866")
@@ -127,8 +131,11 @@ def get_results(n, folder):
             if local_author != remote_author and local_author not in remote_author and remote_author not in local_author:
                 continue
             else:
-                if SequenceMatcher(None, local_addon['title'], remote_addon['title']).ratio() > ratio:
-                    ratio = SequenceMatcher(None, local_addon['title'], remote_addon['title']).ratio()
+                # if SequenceMatcher(None, local_addon['title'], remote_addon['title']).ratio() > ratio:
+                #     ratio = SequenceMatcher(None, local_addon['title'], remote_addon['title']).ratio()
+                #     matching_addon = remote_addon
+                if fuzz.ratio(local_addon['title'], remote_addon['title']) > ratio:
+                    ratio = fuzz.ratio(local_addon['title'], remote_addon['title'])
                     matching_addon = remote_addon
 
         if matching_addon is None:
