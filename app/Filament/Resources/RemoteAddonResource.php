@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\RemoteAddonResource\Pages;
+use App\Filament\Resources\RemoteAddonResource\Pages\ListRemoteAddons;
 use App\Filament\Resources\RemoteAddonResource\RelationManagers;
 use App\Models\RemoteAddon;
 use Filament\Forms;
@@ -11,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class RemoteAddonResource extends Resource
@@ -40,22 +42,35 @@ class RemoteAddonResource extends Resource
                 Tables\Columns\TextColumn::make('version')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('link')
-                    ->searchable()
-                    ->sortable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                //
+                Tables\Actions\Action::make('view')
+                    ->icon('heroicon-o-eye')
+                    ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->link)
+                    ->openUrlInNewTab(),
+                Tables\Actions\Action::make('download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('danger')
+                    ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->torrent)
+                    ->openUrlInNewTab(),
             ])
             ->bulkActions([
-                //
+                Tables\Actions\BulkAction::make('download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('danger')
+                    ->action(function (ListRemoteAddons $livewire, Collection $remoteAddons) {
+                        $remoteAddons->each(function (RemoteAddon $remoteAddon) use ($livewire) {
+                            $livewire->js("window.open('$remoteAddon->torrent', '_blank')");
+                        });
+                    }),
             ])
             ->emptyStateActions([
                 //
-            ]);
+            ])
+            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('updated_at', 'desc'));
     }
 
     public static function getRelations(): array

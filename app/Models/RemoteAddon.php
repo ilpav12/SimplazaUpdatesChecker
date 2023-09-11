@@ -16,7 +16,8 @@ class RemoteAddon extends Model
         'title',
         'author',
         'version',
-        'link',
+        'page',
+        'torrent',
     ];
 
     protected $casts = [
@@ -26,8 +27,7 @@ class RemoteAddon extends Model
 
     public static function getRemoteAddons(): array
     {
-        $url = "https://simplaza.org/torrent-master-list/";
-        $response = Http::get($url);
+        $response = Http::get("https://simplaza.org/torrent-master-list/");
         $htmlContents = $response->body();
 
         $dom = new DOMDocument;
@@ -36,14 +36,14 @@ class RemoteAddon extends Model
         $dom->loadHTML($htmlContents);
         libxml_use_internal_errors(false);
 
-        $finder = new DomXPath($dom);
-
-        $nodes = $finder->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' nv-content-wrap entry-content ')]/p/a[not(contains(.,'Download'))]");
+        $xpath = new DOMXPath($dom);
+        $pages = $xpath->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' nv-content-wrap entry-content ')]/p/a");
+        $torrents = $xpath->query("//*[contains(concat(' ', normalize-space(@class), ' '), ' nv-content-wrap entry-content ')]/p/strong/a[contains(., 'Download')]");
 
         $addons = [];
 
-        foreach ($nodes as $node) {
-            $textContents = $node->textContent;
+        foreach ($pages as $key => $page) {
+            $textContents = $page->textContent;
 
             preg_match('/(.+)\s–\s(.+)/', $textContents, $match);
 
@@ -67,13 +67,12 @@ class RemoteAddon extends Model
                 }
             }
 
-            $link = $node->attributes['href']->value;
-
             $addons[] = [
                 'author' => $author,
                 'title' => $title,
                 'version' => $version,
-                'link' => $link
+                'page' => $page->attributes['href']->value,
+                'torrent' => $torrents[$key]->attributes['href']->value,
             ];
         }
 
@@ -87,7 +86,7 @@ class RemoteAddon extends Model
 
         foreach ($newAddons as $newAddon) {
             $oldAddon = array_filter($oldAddons, function ($oldAddon) use ($newAddon) {
-                return $oldAddon['link'] == $newAddon['link'];
+                return $oldAddon['title'] == $newAddon['title'] && $oldAddon['author'] == $newAddon['author'];
             });
 
             if (empty($oldAddon)) {
@@ -100,5 +99,10 @@ class RemoteAddon extends Model
                 }
             }
         }
+    }
+
+    public function download()
+    {
+        return redirect()->away($this->torrent);
     }
 }
