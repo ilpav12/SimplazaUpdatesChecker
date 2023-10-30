@@ -5,6 +5,7 @@ namespace App\Filament\Resources\RemoteAddonResource\Pages;
 use App\Filament\Resources\RemoteAddonResource;
 use App\Models\RemoteAddon;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
 class ListRemoteAddons extends ListRecords
@@ -17,7 +18,15 @@ class ListRemoteAddons extends ListRecords
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn () => RemoteAddon::saveRemoteAddons()),
+                ->action(function () {
+                    $updatedAddons = RemoteAddon::saveRemoteAddons();
+                    Notification::make()
+                        ->title($updatedAddons == 0
+                            ? 'All addons are up to date'
+                            : "$updatedAddons addons have been updated")
+                        ->success()
+                        ->send();
+                }),
         ];
     }
 }

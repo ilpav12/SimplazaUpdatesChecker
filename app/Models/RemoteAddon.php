@@ -30,7 +30,15 @@ class RemoteAddon extends Model
         $xmlContents = $response->body();
         $arrayContents = json_decode(json_encode(simplexml_load_string($xmlContents, options: LIBXML_NOCDATA)),true);
 
+        if (cache('lastBuildDate') == $arrayContents['channel']['lastBuildDate']) {
+            return [];
+        }
+        $lastBuildDate = $arrayContents['channel']['lastBuildDate'];
+        $lastBuildDate = date('Y-m-d H:i:s', strtotime($lastBuildDate));
+        cache(['lastBuildDate' => $lastBuildDate], 60*24);
+
         $addons = [];
+        $updatedAddons = 0;
 
         foreach ($arrayContents['channel']['item'] as $addon) {
             $textContents = $addon['title'];
@@ -58,29 +66,41 @@ class RemoteAddon extends Model
                 }
             }
 
+            $description = $addon['description'];
+            $description = !str_contains($description, 'Note: ') ? '' : substr($description, strpos($description, 'Note: ') + 6);
+
+            $publishedAt = date('Y-m-d H:i:s', strtotime($addon['pubDate']));
+            if ($publishedAt > $lastBuildDate) {
+                $updatedAddons++;
+            }
+
             $addons[] = [
                 'author' => $author,
                 'title' => $title,
                 'version' => $version,
                 'page' => $addon['link'],
                 'torrent' => $addon['enclosure']['@attributes']['url'],
-                'description' => substr($addon['description'], strpos($addon['description'], 'Note: ') + 6),
-                'created_at' => date('Y-m-d H:i:s', strtotime($addon['pubDate'])),
-                'updated_at' => date('Y-m-d H:i:s', strtotime($addon['pubDate'])),
+                'description' => $description,
+                'created_at' => $publishedAt,
+                'updated_at' => $publishedAt,
             ];
         }
 
-        return $addons;
+        return [
+            'addons' => $addons,
+            'updatedAddons' => $updatedAddons,
+        ];
     }
 
-    public static function saveRemoteAddons(): void
+    public static function saveRemoteAddons(): int
     {
+        $remoteAddons = self::getRemoteAddons();
+        if (empty($remoteAddons)) {
+            return 0;
+        }
+
         RemoteAddon::truncate();
-        RemoteAddon::insert(self::getRemoteAddons());
-    }
-
-    public function download()
-    {
-        return redirect()->away($this->torrent);
+        RemoteAddon::insert($remoteAddons['addons']);
+        return $remoteAddons['updatedAddons'];
     }
 }

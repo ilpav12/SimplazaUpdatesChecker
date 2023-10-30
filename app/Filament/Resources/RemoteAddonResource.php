@@ -9,11 +9,13 @@ use App\Models\RemoteAddon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
 
 class RemoteAddonResource extends Resource
 {
@@ -42,6 +44,18 @@ class RemoteAddonResource extends Resource
                 Tables\Columns\TextColumn::make('version')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('description')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-information-circle')
+                    ->trueColor('info')
+                    ->tooltip(fn (RemoteAddon $record): HtmlString => new HtmlString($record->description))
+                    ->alignment(Alignment::Center)
+                    ->label('Notes')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->date('F j, Y')
+                    ->label('Published')
+                    ->sortable(),
             ])
             ->filters([
                 //
@@ -49,7 +63,7 @@ class RemoteAddonResource extends Resource
             ->actions([
                 Tables\Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->link)
+                    ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->page)
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('download')
                     ->icon('heroicon-o-arrow-down-tray')
