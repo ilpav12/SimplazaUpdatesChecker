@@ -44,14 +44,6 @@ class RemoteAddonResource extends Resource
                 Tables\Columns\TextColumn::make('version')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\IconColumn::make('description')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-information-circle')
-                    ->trueColor('info')
-                    ->tooltip(fn (RemoteAddon $record): HtmlString => new HtmlString($record->description))
-                    ->alignment(Alignment::Center)
-                    ->label('Notes')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->date('F j, Y')
                     ->label('Published')
@@ -61,6 +53,15 @@ class RemoteAddonResource extends Resource
                 //
             ])
             ->actions([
+                Tables\Actions\Action::make('info')
+                    ->icon('heroicon-o-information-circle')
+                    ->color('info')
+                    ->disabled(fn (RemoteAddon $remoteAddon): bool => $remoteAddon->description === '')
+                    ->requiresConfirmation()
+                    ->modalDescription(fn (RemoteAddon $remoteAddon): HtmlString => new HtmlString($remoteAddon->description))
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(false)
+                    ->modalAlignment(Alignment::Left),
                 Tables\Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->page)
