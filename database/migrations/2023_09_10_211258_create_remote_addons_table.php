@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('author');
             $table->string('version');
+            $table->string('description')->nullable();
             $table->string('page')->unique();
             $table->string('torrent')->unique();
             $table->timestamps();

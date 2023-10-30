@@ -22,9 +22,11 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $user = User::first();
-        if ($user) {
-            $this->app['auth']->setUser($user);
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            $user = User::first();
+            if ($user) {
+                $this->app['auth']->setUser($user);
+            }
         }
     }
 }
