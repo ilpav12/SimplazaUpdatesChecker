@@ -23,14 +23,6 @@ class RemoteAddonResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                //
-            ]);
-    }
-
     public static function table(Table $table): Table
     {
         return $table
@@ -86,13 +78,6 @@ class RemoteAddonResource extends Resource
                 //
             ])
             ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('updated_at', 'desc'));
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array
