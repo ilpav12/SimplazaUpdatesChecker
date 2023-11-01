@@ -15,6 +15,7 @@ class LocalAddon extends Model
         'author',
         'version',
         'path',
+        'remote_addon_id',
         'is_updated',
         'is_excluded',
     ];
@@ -23,6 +24,11 @@ class LocalAddon extends Model
         'is_updated' => 'boolean',
         'is_excluded' => 'boolean',
     ];
+
+    public function remoteAddon(): \Illuminate\Database\Eloquent\Relations\belongsTo
+    {
+        return $this->belongsTo(RemoteAddon::class);
+    }
 
     public static function getLocalAddons($folders, $addons = null): Collection
     {
@@ -71,4 +77,31 @@ class LocalAddon extends Model
         self::insert($localAddons->toArray());
     }
 
+    public static function matchLocalAddons(): void
+    {
+        $localAddons = self::query()
+            ->whereNull('remote_addon_id')
+            ->get();
+
+        foreach ($localAddons as $localAddon) {
+            // get the remote addon with the most similar title
+            // using package loilo/fuse
+            // get all remote addons as an array
+            $remoteAddons = RemoteAddon::get()
+                ->toArray();
+            $fuse = new \Fuse\Fuse($remoteAddons, [
+                'keys' => ['title'],
+                'threshold' => 0,
+            ]);
+            $result = $fuse->search($localAddon->title);
+//            dd($result);
+            $remoteAddon = RemoteAddon::find($result[0]['id'] ?? null);
+
+            dump($remoteAddon);
+            if ($remoteAddon) {
+                $localAddon->remote_addon_id = $remoteAddon->id;
+                $localAddon->save();
+            }
+        }
+    }
 }

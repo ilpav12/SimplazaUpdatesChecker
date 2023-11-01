@@ -14,10 +14,14 @@ class ListLocalAddons extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('match')
+                ->label('Match with remote addons')
+                ->icon('heroicon-o-link')
+                ->action(fn () => LocalAddon::matchLocalAddons()),
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn () => LocalAddon::saveLocalAddons()),
+                ->action(fn () => LocalAddon::saveLocalAddons('/mnt/e/MSFS Addons')),
         ];
     }
 }

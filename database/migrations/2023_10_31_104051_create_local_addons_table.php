@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('author');
             $table->string('version');
             $table->string('path')->unique();
+            $table->foreignId('remote_addon_id')->nullable()->constrained();
             $table->boolean('is_updated')->nullable();
             $table->boolean('is_excluded')->default(false);
             $table->timestamps();

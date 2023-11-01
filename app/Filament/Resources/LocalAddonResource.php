@@ -34,6 +34,10 @@ class LocalAddonResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('path')
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('remote_addon.title')
+                    ->default('No matching remote addon')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\IconColumn::make('is_updated')
                     ->default('')
                     ->icon(fn (bool|string $state): string => match ($state) {
