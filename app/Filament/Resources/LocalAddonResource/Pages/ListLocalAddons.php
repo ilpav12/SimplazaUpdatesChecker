@@ -17,7 +17,7 @@ class ListLocalAddons extends ListRecords
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn () => LocalAddon::saveLocalAddons()),
+                ->action(fn () => LocalAddon::saveLocalAddons(config('settings.addons_paths'))),
         ];
     }
 }

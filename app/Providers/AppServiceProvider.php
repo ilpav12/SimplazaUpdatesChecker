@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+            config([
+                'settings' => Setting::all([
+                    'name', 'value'
+                ])
+                ->keyBy('name')
+                ->map(fn ($setting) => $setting->value)
+                ->toArray(),
+            ]);
+        }
     }
 }

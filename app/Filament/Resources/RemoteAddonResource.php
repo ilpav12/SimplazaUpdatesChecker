@@ -23,6 +23,8 @@ class RemoteAddonResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?int $navigationSort = 3;
+
     public static function table(Table $table): Table
     {
         return $table
