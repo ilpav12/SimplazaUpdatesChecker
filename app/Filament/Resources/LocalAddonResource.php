@@ -34,7 +34,7 @@ class LocalAddonResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('path')
                     ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('remote_addon.title')
+                Tables\Columns\TextColumn::make('remoteAddon.title')
                     ->default('No matching remote addon')
                     ->searchable()
                     ->sortable(),

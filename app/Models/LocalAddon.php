@@ -77,25 +77,36 @@ class LocalAddon extends Model
         self::insert($localAddons->toArray());
     }
 
-    public static function matchLocalAddons(): void
+    public static function matchLocalAddons($unmatchedOnly = true): void
     {
         $localAddons = self::query()
-            ->whereNull('remote_addon_id')
+            ->when($unmatchedOnly, fn ($query) => $query->whereNull('remote_addon_id'))
             ->get();
 
+        $remoteAddons = RemoteAddon::all();
+
         foreach ($localAddons as $localAddon) {
-            // get the remote addon with the most similar title
-            // using package loilo/fuse
-            // get all remote addons as an array
-            $remoteAddons = RemoteAddon::get()
-                ->toArray();
-            $fuse = new \Fuse\Fuse($remoteAddons, [
-                'keys' => ['title'],
-                'threshold' => 0,
-            ]);
-            $result = $fuse->search($localAddon->title);
-//            dd($result);
-            $remoteAddon = RemoteAddon::find($result[0]['id'] ?? null);
+
+            $remoteAddons = $remoteAddons->filter(function ($remoteAddon) use ($localAddon) {
+                if (preg_match('/^[0-9.]+$/', $localAddon->version) || version_compare($remoteAddon->version, $localAddon->version, '<')) {
+                    return false;
+                }
+
+                if ($remoteAddon->author != $localAddon->author) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            $remoteAddon = $remoteAddons->reduce(function ($carry, $remoteAddon) use ($localAddon) {
+                $distance = levenshtein($localAddon->title, $remoteAddon->title);
+                if ($distance < $carry['distance']) {
+                    $carry['distance'] = $distance;
+                    $carry['remoteAddon'] = $remoteAddon;
+                }
+                return $carry;
+            }, ['distance' => 1000, 'remoteAddon' => null])['remoteAddon'];
 
             dump($remoteAddon);
             if ($remoteAddon) {
