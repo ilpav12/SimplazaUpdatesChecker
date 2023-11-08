@@ -15,6 +15,7 @@ class LocalAddon extends Model
         'author',
         'version',
         'path',
+        'remote_addon_id',
         'is_updated',
         'is_excluded',
     ];
@@ -23,6 +24,11 @@ class LocalAddon extends Model
         'is_updated' => 'boolean',
         'is_excluded' => 'boolean',
     ];
+
+    public function remoteAddon(): \Illuminate\Database\Eloquent\Relations\belongsTo
+    {
+        return $this->belongsTo(RemoteAddon::class);
+    }
 
     public static function getLocalAddons($folders, $addons = null): Collection
     {
@@ -66,9 +72,80 @@ class LocalAddon extends Model
 
     public static function saveLocalAddons($folders): void
     {
-        $localAddons = self::getLocalAddons($folders);
-        self::truncate();
-        self::insert($localAddons->toArray());
+        $newLocalAddons = self::getLocalAddons($folders);
+        $oldLocalAddons = self::all();
+        if ($oldLocalAddons->isEmpty()) {
+            self::insert($newLocalAddons->toArray());
+            return;
+        }
+
+        foreach ($newLocalAddons as $localAddon) {
+            self::updateOrCreate(
+                [
+                    'path' => $localAddon['path'],
+                ],
+                [
+                    'title' => $localAddon['title'],
+                    'author' => $localAddon['author'],
+                    'version' => $localAddon['version'],
+                ]
+            );
+        }
+
+        foreach ($oldLocalAddons as $oldLocalAddon) {
+            if (!$newLocalAddons->contains('path', $oldLocalAddon->path)) {
+                $oldLocalAddon->delete();
+            }
+        }
     }
 
+    public static function matchLocalAddons($unmatchedOnly = true): void
+    {
+        $localAddons = self::query()
+            ->where('is_excluded', false)
+            ->when($unmatchedOnly, fn ($query) => $query->whereNull('remote_addon_id'))
+            ->get();
+
+        $allRemoteAddons = RemoteAddon::all();
+
+        foreach ($localAddons as $localAddon) {
+            $cleanLocalAuthor = strtolower(str_replace(' ', '', $localAddon->author));
+            $remoteAddons = $allRemoteAddons->filter(function ($remoteAddon) use ($localAddon, $cleanLocalAuthor) {
+                if (version_compare($remoteAddon->version, $localAddon->version, '<')) {
+                    return false;
+                }
+
+                $cleanRemoteAuthor = strtolower(str_replace(' ', '', $remoteAddon->author));
+                if ($cleanRemoteAuthor != $cleanLocalAuthor && !str_contains($cleanRemoteAuthor, $cleanLocalAuthor) && !str_contains($cleanLocalAuthor, $cleanRemoteAuthor)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+
+            $cleanLocalTitle = strtolower(str_replace(' ', '', $localAddon->title));
+            $remoteAddon = $remoteAddons->reduce(function ($carry, $remoteAddon) use ($localAddon, $cleanLocalTitle) {
+                $cleanRemoteTitle = strtolower(str_replace(' ', '', $remoteAddon->title));
+                if ($cleanRemoteTitle == $cleanLocalTitle || str_contains($cleanRemoteTitle, $cleanLocalTitle) || str_contains($cleanLocalTitle, $cleanRemoteTitle)) {
+                    $carry['distance'] = 0;
+                    $carry['remoteAddon'] = $remoteAddon;
+                    return $carry;
+                }
+
+                $distance = levenshtein($cleanLocalTitle, $cleanRemoteTitle);
+                if ($distance < $carry['distance']) {
+                    $carry['distance'] = $distance;
+                    $carry['remoteAddon'] = $remoteAddon;
+                }
+                return $carry;
+            }, ['distance' => 1000, 'remoteAddon' => null])['remoteAddon'];
+
+            if ($remoteAddon) {
+                $localAddon->remote_addon_id = $remoteAddon->id;
+                $localAddon->is_updated = version_compare($localAddon->version, $remoteAddon->version, '>=');
+                $localAddon->save();
+            }
+        }
+    }
 }
