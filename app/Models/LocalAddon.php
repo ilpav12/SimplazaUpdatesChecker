@@ -30,6 +30,11 @@ class LocalAddon extends Model
         return $this->belongsTo(RemoteAddon::class);
     }
 
+    public function getDetailsAttribute(): string
+    {
+        return "$this->author - $this->title";
+    }
+
     public static function getLocalAddons($folders, $addons = null): Collection
     {
         if ($addons == null) {

@@ -26,6 +26,11 @@ class RemoteAddon extends Model
         'updated_at' => 'datetime',
     ];
 
+    public function getDetailsAttribute(): string
+    {
+        return "$this->author - $this->title";
+    }
+
     public static function getRemoteAddons(): Collection
     {
         $response = Http::get("https://simplaza.org/torrent/rss.xml");
