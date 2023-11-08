@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 
 class RemoteAddon extends Model
@@ -17,6 +18,7 @@ class RemoteAddon extends Model
         'description',
         'page',
         'torrent',
+        'published_at',
     ];
 
     protected $casts = [
@@ -24,21 +26,19 @@ class RemoteAddon extends Model
         'updated_at' => 'datetime',
     ];
 
-    public static function getRemoteAddons(): array
+    public static function getRemoteAddons(): Collection
     {
         $response = Http::get("https://simplaza.org/torrent/rss.xml");
         $xmlContents = $response->body();
         $arrayContents = json_decode(json_encode(simplexml_load_string($xmlContents, options: LIBXML_NOCDATA)),true);
 
-        if (cache('lastBuildDate') == $arrayContents['channel']['lastBuildDate']) {
-            return [];
+        $lastBuildDate = date('Y-m-d H:i:s', strtotime($arrayContents['channel']['lastBuildDate']));
+        if (cache('lastBuildDate') == $lastBuildDate) {
+            return collect();
         }
-        $lastBuildDate = $arrayContents['channel']['lastBuildDate'];
-        $lastBuildDate = date('Y-m-d H:i:s', strtotime($lastBuildDate));
         cache(['lastBuildDate' => $lastBuildDate], 60*24);
 
-        $addons = [];
-        $updatedAddons = 0;
+        $addons = collect();
 
         foreach ($arrayContents['channel']['item'] as $addon) {
             $textContents = $addon['title'];
@@ -69,38 +69,59 @@ class RemoteAddon extends Model
             $description = $addon['description'];
             $description = !str_contains($description, 'Note: ') ? '' : substr($description, strpos($description, 'Note: ') + 6);
 
-            $publishedAt = date('Y-m-d H:i:s', strtotime($addon['pubDate']));
-            if ($publishedAt > $lastBuildDate) {
-                $updatedAddons++;
-            }
-
-            $addons[] = [
+            $addons->push([
                 'author' => $author,
                 'title' => $title,
                 'version' => $version,
                 'page' => $addon['link'],
                 'torrent' => $addon['enclosure']['@attributes']['url'],
                 'description' => $description,
-                'created_at' => $publishedAt,
-                'updated_at' => $publishedAt,
-            ];
+                'published_at' => date('Y-m-d H:i:s', strtotime($addon['pubDate'])),
+            ]);
         }
 
-        return [
-            'addons' => $addons,
-            'updatedAddons' => $updatedAddons,
-        ];
+        return $addons;
     }
 
     public static function saveRemoteAddons(): int
     {
-        $remoteAddons = self::getRemoteAddons();
-        if (empty($remoteAddons)) {
+        $newRemoteAddons = self::getRemoteAddons();
+        if ($newRemoteAddons->isEmpty()) {
             return 0;
         }
+        $recentlyCreated = 0;
+        $oldRemoteAddons = self::all();
+        if ($oldRemoteAddons->isEmpty()) {
+            self::insert($newRemoteAddons->toArray());
+            return $newRemoteAddons->count();
+        }
 
-        RemoteAddon::truncate();
-        RemoteAddon::insert($remoteAddons['addons']);
-        return $remoteAddons['updatedAddons'];
+        foreach ($newRemoteAddons as $newRemoteAddon) {
+            $addon = self::updateOrCreate(
+                [
+                    'title' => $newRemoteAddon['title'],
+                    'author' => $newRemoteAddon['author'],
+                ],
+                [
+                    'page' => $newRemoteAddon['page'],
+                    'version' => $newRemoteAddon['version'],
+                    'description' => $newRemoteAddon['description'],
+                    'torrent' => $newRemoteAddon['torrent'],
+                    'published_at' => $newRemoteAddon['published_at'],
+                ]
+            );
+
+            if ($addon->wasRecentlyCreated) {
+                $recentlyCreated++;
+            }
+        }
+
+        foreach ($oldRemoteAddons as $oldRemoteAddon) {
+            if (!$newRemoteAddons->contains('page', $oldRemoteAddon->page)) {
+                $oldRemoteAddon->delete();
+            }
+        }
+
+        return $recentlyCreated;
     }
 }

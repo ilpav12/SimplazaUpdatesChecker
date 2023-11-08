@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('page')->unique();
             $table->string('torrent')->unique();
+            $table->timestamp('published_at');
             $table->timestamps();
         });
     }

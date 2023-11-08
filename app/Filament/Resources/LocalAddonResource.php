@@ -54,7 +54,8 @@ class LocalAddonResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_excluded'),
             ])
             ->filters([
-                //
+                Tables\Filters\TernaryFilter::make('is_excluded')
+                    ->default(false),
             ])
             ->actions([
                 //

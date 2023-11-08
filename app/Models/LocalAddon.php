@@ -72,9 +72,31 @@ class LocalAddon extends Model
 
     public static function saveLocalAddons($folders): void
     {
-        $localAddons = self::getLocalAddons($folders);
-        self::truncate();
-        self::insert($localAddons->toArray());
+        $newLocalAddons = self::getLocalAddons($folders);
+        $oldLocalAddons = self::all();
+        if ($oldLocalAddons->isEmpty()) {
+            self::insert($newLocalAddons->toArray());
+            return;
+        }
+
+        foreach ($newLocalAddons as $localAddon) {
+            self::updateOrCreate(
+                [
+                    'path' => $localAddon['path'],
+                ],
+                [
+                    'title' => $localAddon['title'],
+                    'author' => $localAddon['author'],
+                    'version' => $localAddon['version'],
+                ]
+            );
+        }
+
+        foreach ($oldLocalAddons as $oldLocalAddon) {
+            if (!$newLocalAddons->contains('path', $oldLocalAddon->path)) {
+                $oldLocalAddon->delete();
+            }
+        }
     }
 
     public static function matchLocalAddons($unmatchedOnly = true): void
@@ -121,6 +143,7 @@ class LocalAddon extends Model
 
             if ($remoteAddon) {
                 $localAddon->remote_addon_id = $remoteAddon->id;
+                $localAddon->is_updated = version_compare($localAddon->version, $remoteAddon->version, '>=');
                 $localAddon->save();
             }
         }
