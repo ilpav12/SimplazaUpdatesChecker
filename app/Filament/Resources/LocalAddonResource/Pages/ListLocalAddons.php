@@ -17,7 +17,7 @@ class ListLocalAddons extends ListRecords
             Actions\Action::make('match')
                 ->label('Match with remote addons')
                 ->icon('heroicon-o-link')
-                ->action(fn () => LocalAddon::matchLocalAddons()),
+                ->action(fn () => LocalAddon::matchLocalAddons(false)),
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')

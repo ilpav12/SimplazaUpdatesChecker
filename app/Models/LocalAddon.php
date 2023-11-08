@@ -80,27 +80,38 @@ class LocalAddon extends Model
     public static function matchLocalAddons($unmatchedOnly = true): void
     {
         $localAddons = self::query()
+            ->where('is_excluded', false)
             ->when($unmatchedOnly, fn ($query) => $query->whereNull('remote_addon_id'))
             ->get();
 
-        $remoteAddons = RemoteAddon::all();
+        $allRemoteAddons = RemoteAddon::all();
 
         foreach ($localAddons as $localAddon) {
-
-            $remoteAddons = $remoteAddons->filter(function ($remoteAddon) use ($localAddon) {
-                if (preg_match('/^[0-9.]+$/', $localAddon->version) || version_compare($remoteAddon->version, $localAddon->version, '<')) {
+            $cleanLocalAuthor = strtolower(str_replace(' ', '', $localAddon->author));
+            $remoteAddons = $allRemoteAddons->filter(function ($remoteAddon) use ($localAddon, $cleanLocalAuthor) {
+                if (version_compare($remoteAddon->version, $localAddon->version, '<')) {
                     return false;
                 }
 
-                if ($remoteAddon->author != $localAddon->author) {
+                $cleanRemoteAuthor = strtolower(str_replace(' ', '', $remoteAddon->author));
+                if ($cleanRemoteAuthor != $cleanLocalAuthor && !str_contains($cleanRemoteAuthor, $cleanLocalAuthor) && !str_contains($cleanLocalAuthor, $cleanRemoteAuthor)) {
                     return false;
                 }
 
                 return true;
             });
 
-            $remoteAddon = $remoteAddons->reduce(function ($carry, $remoteAddon) use ($localAddon) {
-                $distance = levenshtein($localAddon->title, $remoteAddon->title);
+
+            $cleanLocalTitle = strtolower(str_replace(' ', '', $localAddon->title));
+            $remoteAddon = $remoteAddons->reduce(function ($carry, $remoteAddon) use ($localAddon, $cleanLocalTitle) {
+                $cleanRemoteTitle = strtolower(str_replace(' ', '', $remoteAddon->title));
+                if ($cleanRemoteTitle == $cleanLocalTitle || str_contains($cleanRemoteTitle, $cleanLocalTitle) || str_contains($cleanLocalTitle, $cleanRemoteTitle)) {
+                    $carry['distance'] = 0;
+                    $carry['remoteAddon'] = $remoteAddon;
+                    return $carry;
+                }
+
+                $distance = levenshtein($cleanLocalTitle, $cleanRemoteTitle);
                 if ($distance < $carry['distance']) {
                     $carry['distance'] = $distance;
                     $carry['remoteAddon'] = $remoteAddon;
@@ -108,7 +119,6 @@ class LocalAddon extends Model
                 return $carry;
             }, ['distance' => 1000, 'remoteAddon' => null])['remoteAddon'];
 
-            dump($remoteAddon);
             if ($remoteAddon) {
                 $localAddon->remote_addon_id = $remoteAddon->id;
                 $localAddon->save();

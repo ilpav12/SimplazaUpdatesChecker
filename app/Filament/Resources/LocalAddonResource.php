@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\LocalAddonResource\Pages;
 use App\Filament\Resources\LocalAddonResource\RelationManagers;
 use App\Models\LocalAddon;
+use App\Models\RemoteAddon;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -35,7 +36,7 @@ class LocalAddonResource extends Resource
                 Tables\Columns\TextColumn::make('path')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('remoteAddon.title')
-                    ->default('No matching remote addon')
+                    ->placeholder('No matching remote addon')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_updated')
