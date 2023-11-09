@@ -116,7 +116,7 @@ class LocalAddon extends Model
         foreach ($localAddons as $localAddon) {
             $cleanLocalAuthor = strtolower(str_replace(' ', '', $localAddon->author));
             $remoteAddons = $allRemoteAddons->filter(function ($remoteAddon) use ($localAddon, $cleanLocalAuthor) {
-                if (version_compare($remoteAddon->version, $localAddon->version, '<')) {
+                if (version_compare(rtrim($remoteAddon->version, ".0"), rtrim($localAddon->version, ".0"), '<')) {
                     return false;
                 }
 
@@ -148,7 +148,7 @@ class LocalAddon extends Model
 
             if ($remoteAddon) {
                 $localAddon->remote_addon_id = $remoteAddon->id;
-                $localAddon->is_updated = version_compare($localAddon->version, $remoteAddon->version, '>=');
+                $localAddon->is_updated = version_compare(rtrim($localAddon->version, ".0"), rtrim($remoteAddon->version, ".0"), '>=');
                 $localAddon->save();
             }
         }

@@ -76,7 +76,7 @@ class LocalAddonResource extends Resource
                     ])
                     ->action(function (array $data, LocalAddon $record): void {
                         $record->remote_addon_id = $data['remote_addon_id'];
-                        $record->is_updated = version_compare($record->version, $record->remoteAddon->version, '>=');
+                        $record->is_updated = version_compare(rtrim($record->version, ".0"), rtrim($record->remoteAddon->version, ".0"), '>=');
                         $record->save();
                         Notification::make()
                             ->title('Remote addon changed')
