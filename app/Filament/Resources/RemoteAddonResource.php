@@ -38,7 +38,7 @@ class RemoteAddonResource extends Resource
                 Tables\Columns\TextColumn::make('version')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('updated_at')
+                Tables\Columns\TextColumn::make('published_at')
                     ->date('F j, Y')
                     ->label('Published')
                     ->sortable(),
@@ -79,7 +79,7 @@ class RemoteAddonResource extends Resource
             ->emptyStateActions([
                 //
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('updated_at', 'desc'));
+            ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('published_at', 'desc'));
     }
 
     public static function getPages(): array

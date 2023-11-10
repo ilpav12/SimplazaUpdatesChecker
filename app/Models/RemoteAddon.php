@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -94,13 +95,19 @@ class RemoteAddon extends Model
         if ($newRemoteAddons->isEmpty()) {
             return 0;
         }
-        $recentlyCreated = 0;
-        $oldRemoteAddons = self::all();
-        if ($oldRemoteAddons->isEmpty()) {
+
+        if (self::all()->isEmpty()) {
+            $timestamp = Carbon::now();
+            $newRemoteAddons->transform(function ($addon) use ($timestamp) {
+                $addon['created_at'] = $timestamp;
+                $addon['updated_at'] = $timestamp;
+                return $addon;
+            });
             self::insert($newRemoteAddons->toArray());
             return $newRemoteAddons->count();
         }
 
+        $recentlyCreated = 0;
         foreach ($newRemoteAddons as $newRemoteAddon) {
             $addon = self::updateOrCreate(
                 [
@@ -121,9 +128,9 @@ class RemoteAddon extends Model
             }
         }
 
-        foreach ($oldRemoteAddons as $oldRemoteAddon) {
-            if (!$newRemoteAddons->contains('page', $oldRemoteAddon->page)) {
-                $oldRemoteAddon->delete();
+        foreach (self::all() as $remoteAddon) {
+            if (!$newRemoteAddons->contains('page', $remoteAddon->page)) {
+                $remoteAddon->delete();
             }
         }
 
