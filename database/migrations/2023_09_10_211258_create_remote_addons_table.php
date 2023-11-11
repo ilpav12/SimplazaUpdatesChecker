@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('author');
             $table->string('version');
             $table->string('description')->nullable();
+            $table->string('warning')->nullable();
+            $table->boolean('is_recommended')->nullable();
             $table->string('page')->unique();
             $table->string('torrent')->unique();
             $table->timestamp('published_at');

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IsRecommended;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,8 @@ class RemoteAddon extends Model
         'author',
         'version',
         'description',
+        'warning',
+        'is_recommended',
         'page',
         'torrent',
         'published_at',
@@ -25,6 +28,8 @@ class RemoteAddon extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'published_at' => 'datetime',
+        'is_recommended' => IsRecommended::class,
     ];
 
     public function getDetailsAttribute(): string
@@ -72,8 +77,36 @@ class RemoteAddon extends Model
                 }
             }
 
-            $description = $addon['description'];
-            $description = !str_contains($description, 'Note: ') ? '' : substr($description, strpos($description, 'Note: ') + 6);
+            $notePosition = strpos($addon['description'], 'Note: ');
+            if ($notePosition !== false) {
+                $description = substr($addon['description'], $notePosition + 6) . '<br><br>';
+            }
+
+            $warningPosition = strpos($addon['description'], 'Warning: ');
+            if ($warningPosition !== false) {
+                if ($notePosition === false) {
+                    $warning = substr($addon['description'], $warningPosition + 9) . '<br><br>';
+                } else {
+                    $warning = substr($addon['description'], $warningPosition + 9, $notePosition - $warningPosition - 9);
+                }
+            }
+
+            if (!isset($warning)) {
+                $isRecommended = null;
+            } else {
+                $pattern = '/\((.*) recommended\)/';
+                preg_match($pattern, $warning, $match);
+
+                if (!isset($match[1])) {
+                    $isRecommended = IsRecommended::NoRecommendation;
+                } else {
+                    if ($match[1] == $author) {
+                        $isRecommended = IsRecommended::FullyRecommended;
+                    } else {
+                        $isRecommended = IsRecommended::NotRecommended;
+                    }
+                }
+            }
 
             $addons->push([
                 'author' => $author,
@@ -81,7 +114,9 @@ class RemoteAddon extends Model
                 'version' => $version,
                 'page' => $addon['link'],
                 'torrent' => $addon['enclosure']['@attributes']['url'],
-                'description' => $description,
+                'description' => $description ?? null,
+                'warning' => $warning ?? null,
+                'is_recommended' => $isRecommended,
                 'published_at' => date('Y-m-d H:i:s', strtotime($addon['pubDate'])),
             ]);
         }
@@ -118,6 +153,8 @@ class RemoteAddon extends Model
                     'page' => $newRemoteAddon['page'],
                     'version' => $newRemoteAddon['version'],
                     'description' => $newRemoteAddon['description'],
+                    'warning' => $newRemoteAddon['warning'],
+                    'is_recommended' => $newRemoteAddon['is_recommended'],
                     'torrent' => $newRemoteAddon['torrent'],
                     'published_at' => $newRemoteAddon['published_at'],
                 ]

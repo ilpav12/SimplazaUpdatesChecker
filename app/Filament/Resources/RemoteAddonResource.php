@@ -6,6 +6,7 @@ use App\Filament\Resources\RemoteAddonResource\Pages;
 use App\Filament\Resources\RemoteAddonResource\Pages\ListRemoteAddons;
 use App\Filament\Resources\RemoteAddonResource\RelationManagers;
 use App\Models\RemoteAddon;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -36,21 +37,52 @@ class RemoteAddonResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('version')
-                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('is_recommended')
+                    ->badge()
+                    ->action(
+                        Tables\Actions\Action::make('warning')
+                            ->icon('heroicon-o-exclamation-triangle')
+                            ->color('danger')
+                            ->disabled(fn (RemoteAddon $remoteAddon): bool => is_null($remoteAddon->warning))
+                            ->requiresConfirmation()
+                            ->modalDescription(fn (RemoteAddon $remoteAddon): HtmlString => new HtmlString($remoteAddon->warning))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                            ->modalAlignment(Alignment::Left),
+                    )
+                    ->extraAttributes(
+                        fn (RemoteAddon $remoteAddon): array => is_null($remoteAddon->warning)
+                            ? ['class' => 'cursor-default']
+                            : []
+                    )
+                    ->placeholder('No Conflicts')
+                    ->label('Recommended')
+                    ->toggleable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('published_at')
                     ->date('F j, Y')
                     ->label('Published')
+                    ->toggleable()
                     ->sortable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('is_recommended')
+                    ->options([
+                        'fully' => 'Fully Recommended',
+                        'partially' => 'Partially Recommended',
+                        'not' => 'Not Recommended',
+                        'none' => 'No Recommendation',
+                        null => 'No Conflicts',
+                    ])
+                    ->placeholder('Any')
+                    ->label('Recommendation'),
             ])
             ->actions([
                 Tables\Actions\Action::make('info')
                     ->icon('heroicon-o-information-circle')
                     ->color('info')
-                    ->disabled(fn (RemoteAddon $remoteAddon): bool => $remoteAddon->description === '')
+                    ->disabled(fn (RemoteAddon $remoteAddon): bool => is_null($remoteAddon->description))
                     ->requiresConfirmation()
                     ->modalDescription(fn (RemoteAddon $remoteAddon): HtmlString => new HtmlString($remoteAddon->description))
                     ->modalSubmitAction(false)
@@ -58,11 +90,12 @@ class RemoteAddonResource extends Resource
                     ->modalAlignment(Alignment::Left),
                 Tables\Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
+                    ->color('gray')
                     ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->page)
                     ->openUrlInNewTab(),
                 Tables\Actions\Action::make('download')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('danger')
+                    ->color('primary')
                     ->url(fn (RemoteAddon $remoteAddon) => $remoteAddon->torrent)
                     ->openUrlInNewTab(),
             ])
