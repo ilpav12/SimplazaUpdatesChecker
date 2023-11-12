@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\IsRecommended;
 use App\Filament\Resources\LocalAddonResource\Pages;
 use App\Filament\Resources\LocalAddonResource\RelationManagers;
 use App\Models\LocalAddon;
@@ -10,10 +11,12 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
 
 class LocalAddonResource extends Resource
 {
@@ -59,11 +62,63 @@ class LocalAddonResource extends Resource
                         default => 'info',
                     }),
                 Tables\Columns\ToggleColumn::make('is_excluded'),
+                Tables\Columns\TextColumn::make('remoteAddon.is_recommended')
+                    ->badge()
+                    ->action(
+                        Tables\Actions\Action::make('warning')
+                            ->icon('heroicon-o-exclamation-triangle')
+                            ->color('danger')
+                            ->disabled(fn (LocalAddon $localAddon): bool => is_null($localAddon->remoteAddon?->warning))
+                            ->requiresConfirmation()
+                            ->modalDescription(fn (LocalAddon $localAddon): HtmlString => new HtmlString($localAddon->remoteAddon?->warning))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                            ->modalAlignment(Alignment::Left),
+                    )
+                    ->extraAttributes(
+                        fn (LocalAddon $localAddon): array => is_null($localAddon->remoteAddon?->warning)
+                            ? ['class' => 'cursor-default']
+                            : []
+                    )
+                    ->placeholder('Choose a matching addon')
+                    ->label('Recommended')
+                    ->toggleable()
+                    ->sortable(),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_excluded')
                     ->default(false),
                 Tables\Filters\TernaryFilter::make('is_updated'),
+                Tables\Filters\TernaryFilter::make('is_matched')
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereHas('remoteAddon'),
+                        false: fn (Builder $query) => $query->whereDoesntHave('remoteAddon'),
+                    ),
+                Tables\Filters\Filter::make('is_recommended')
+                    ->form([
+                        Forms\Components\Select::make('is_recommended')
+                            ->options([
+                                'fully' => 'Fully Recommended',
+                                'partially' => 'Partially Recommended',
+                                'not' => 'Not Recommended',
+                                'none' => 'No Recommendation',
+                                null => 'No Conflicts',
+                            ])
+                            ->placeholder('Any')
+                            ->label('Recommendation'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query->when(
+                            $data['is_recommended'],
+                            function (Builder $query, ?string $isRecommended): Builder {
+                                return $query->whereHas(
+                                    'remoteAddon',
+                                    function (Builder $query) use ($isRecommended): Builder {
+                                        return $query->where('is_recommended', $isRecommended);
+                                });
+                        });
+                    })
+                    ->label('Recommendation'),
             ])
             ->actions([
                 Tables\Actions\Action::make('change_remote_addon')

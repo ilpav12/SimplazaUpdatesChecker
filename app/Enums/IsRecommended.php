@@ -13,6 +13,8 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
     case NotRecommended = 'not';
     case NoRecommendation = 'none';
 
+    case NoConflicts = 'zero';
+
 
     public function getLabel(): ?string
     {
@@ -21,6 +23,7 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
             self::PartiallyRecommended => 'Partially Recommended',
             self::NotRecommended => 'Not Recommended',
             self::NoRecommendation => 'No Recommendation',
+            self::NoConflicts => 'No Conflicts',
         };
     }
 
@@ -31,7 +34,7 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
             self::FullyRecommended => 'success',
             self::PartiallyRecommended => 'warning',
             self::NotRecommended => 'danger',
-            self::NoRecommendation => 'gray',
+            self::NoRecommendation, self::NoConflicts => 'gray',
         };
     }
 
@@ -42,6 +45,7 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
             self::PartiallyRecommended => 'heroicon-o-exclamation-circle',
             self::NotRecommended => 'heroicon-o-x-circle',
             self::NoRecommendation => 'heroicon-o-question-mark-circle',
+            self::NoConflicts => 'heroicon-o-minus-circle',
         };
     }
 }

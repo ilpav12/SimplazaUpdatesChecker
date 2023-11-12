@@ -77,6 +77,7 @@ class RemoteAddon extends Model
                 }
             }
 
+            $description = $warning = null;
             $notePosition = strpos($addon['description'], 'Note: ');
             if ($notePosition !== false) {
                 $description = substr($addon['description'], $notePosition + 6) . '<br><br>';
@@ -84,15 +85,13 @@ class RemoteAddon extends Model
 
             $warningPosition = strpos($addon['description'], 'Warning: ');
             if ($warningPosition !== false) {
-                if ($notePosition === false) {
-                    $warning = substr($addon['description'], $warningPosition + 9) . '<br><br>';
-                } else {
-                    $warning = substr($addon['description'], $warningPosition + 9, $notePosition - $warningPosition - 9);
-                }
+                $warning = $notePosition === false
+                    ? substr($addon['description'], $warningPosition + 9) . '<br><br>'
+                    : substr($addon['description'], $warningPosition + 9, $notePosition - $warningPosition - 9);
             }
 
             if (!isset($warning)) {
-                $isRecommended = null;
+                $isRecommended = IsRecommended::NoConflicts;
             } else {
                 $pattern = '/\((.*) recommended\)/';
                 preg_match($pattern, $warning, $match);
@@ -100,11 +99,9 @@ class RemoteAddon extends Model
                 if (!isset($match[1])) {
                     $isRecommended = IsRecommended::NoRecommendation;
                 } else {
-                    if ($match[1] == $author) {
-                        $isRecommended = IsRecommended::FullyRecommended;
-                    } else {
-                        $isRecommended = IsRecommended::NotRecommended;
-                    }
+                    $isRecommended = $match[1] == $author
+                        ? IsRecommended::FullyRecommended
+                        : IsRecommended::NotRecommended;
                 }
             }
 
