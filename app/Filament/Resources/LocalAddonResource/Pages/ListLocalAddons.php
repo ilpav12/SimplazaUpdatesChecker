@@ -5,7 +5,9 @@ namespace App\Filament\Resources\LocalAddonResource\Pages;
 use App\Filament\Resources\LocalAddonResource;
 use App\Models\LocalAddon;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\HtmlString;
 
 class ListLocalAddons extends ListRecords
 {
@@ -21,7 +23,19 @@ class ListLocalAddons extends ListRecords
             Actions\Action::make('refresh')
                 ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
-                ->action(fn () => LocalAddon::saveLocalAddons(config('settings.addons_paths'))),
+                ->action(function () {
+                    $addonsPaths = config('settings.addons_paths');
+                    if (empty($addonsPaths)) {
+                        Notification::make('missing_addons_paths')
+                            ->title('Missing addons paths')
+                            ->body(new HtmlString('Please add at least one addons path in the <a href="' . route('filament.admin.pages.settings') . '" style="text-decoration: underline">settings page</a>.'))
+                            ->danger()
+                            ->persistent()
+                            ->send();
+                        return;
+                    }
+                    LocalAddon::saveLocalAddons($addonsPaths);
+                }),
         ];
     }
 }

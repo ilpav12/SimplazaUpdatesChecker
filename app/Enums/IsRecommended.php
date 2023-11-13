@@ -12,7 +12,6 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
     case PartiallyRecommended = 'partially';
     case NotRecommended = 'not';
     case NoRecommendation = 'none';
-
     case NoConflicts = 'zero';
 
 

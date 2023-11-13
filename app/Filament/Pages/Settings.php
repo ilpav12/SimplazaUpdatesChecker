@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Setting;
+use App\Rules\ValidPath;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -38,6 +39,7 @@ class Settings extends Page implements HasForms
                 Forms\Components\Repeater::make('addons_paths')
                     ->simple(
                         Forms\Components\TextInput::make('path')
+                            ->rules([new ValidPath()])
                             ->required(),
                     )
                     ->reorderable(false),

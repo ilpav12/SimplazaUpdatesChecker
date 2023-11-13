@@ -102,7 +102,7 @@ class LocalAddonResource extends Resource
                                 'partially' => 'Partially Recommended',
                                 'not' => 'Not Recommended',
                                 'none' => 'No Recommendation',
-                                null => 'No Conflicts',
+                                'zero' => 'No Conflicts',
                             ])
                             ->placeholder('Any')
                             ->label('Recommendation'),
