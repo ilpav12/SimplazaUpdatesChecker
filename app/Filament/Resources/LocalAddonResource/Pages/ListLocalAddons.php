@@ -17,11 +17,13 @@ class ListLocalAddons extends ListRecords
     {
         return [
             Actions\Action::make('match')
-                ->label('Match with remote addons')
+                ->label('Match addons')
+                ->tooltip('This will automatically try to match local addons with remote addons based on their titles and authors. This operation is done only for not excluded or already matched addons.')
                 ->icon('heroicon-o-link')
                 ->action(fn () => LocalAddon::matchLocalAddons()),
             Actions\Action::make('refresh')
                 ->label('Refresh')
+                ->tooltip('This will get the latest list of addons from the paths configured in the settings page.')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
                     $addonsPaths = config('settings.addons_paths');

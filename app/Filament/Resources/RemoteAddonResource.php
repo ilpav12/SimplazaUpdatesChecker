@@ -22,7 +22,7 @@ class RemoteAddonResource extends Resource
 {
     protected static ?string $model = RemoteAddon::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-cloud';
 
     protected static ?int $navigationSort = 3;
 

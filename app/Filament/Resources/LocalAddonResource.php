@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\IsRecommended;
 use App\Filament\Resources\LocalAddonResource\Pages;
+use App\Filament\Resources\LocalAddonResource\Pages\ListLocalAddons;
 use App\Filament\Resources\LocalAddonResource\RelationManagers;
 use App\Models\LocalAddon;
 use App\Models\RemoteAddon;
@@ -15,6 +16,7 @@ use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\HtmlString;
 
@@ -22,7 +24,7 @@ class LocalAddonResource extends Resource
 {
     protected static ?string $model = LocalAddon::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-folder';
 
     protected static ?int $navigationSort = 2;
 
@@ -84,6 +86,8 @@ class LocalAddonResource extends Resource
                     ->label('Recommended')
                     ->toggleable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('remoteAddon.details')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_excluded')
@@ -121,31 +125,59 @@ class LocalAddonResource extends Resource
                     ->label('Recommendation'),
             ])
             ->actions([
-                Tables\Actions\Action::make('change_remote_addon')
-                    ->form([
-                        Forms\Components\Select::make('remote_addon_id')
-                            ->relationship('remoteAddon', 'title')
-                            ->getOptionLabelFromRecordUsing(fn (RemoteAddon $record) => $record->details)
-                            ->searchable(['title', 'author'])
-                            ->required(),
-                    ])
-                    ->action(function (array $data, LocalAddon $record): void {
-                        $record->remote_addon_id = $data['remote_addon_id'];
-                        $record->is_updated = version_compare(rtrim($record->version, ".0"), rtrim($record->remoteAddon->version, ".0"), '>=');
-                        $record->save();
-                        Notification::make()
-                            ->title('Remote addon changed')
-                            ->body("{$record->details} remote addon changed to {$record->remoteAddon->details}")
-                            ->success()
-                            ->send();
-                    })
-                    ->modalHeading(fn (LocalAddon $record): string => "Change remote addon for {$record->details}"),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('change_matching_addon')
+                        ->form([
+                            Forms\Components\Select::make('remote_addon_id')
+                                ->relationship('remoteAddon', 'title')
+                                ->getOptionLabelFromRecordUsing(fn (RemoteAddon $record) => $record->details)
+                                ->searchable(['title', 'author'])
+                                ->placeholder('Choose a matching addon')
+                                ->default(fn (LocalAddon $record): ?int => $record->remote_addon_id)
+                                ->required(),
+                        ])
+                        ->action(function (array $data, LocalAddon $record): void {
+                            $record->remote_addon_id = $data['remote_addon_id'];
+                            $record->is_updated = version_compare(rtrim($record->version, ".0"), rtrim($record->remoteAddon->version, ".0"), '>=');
+                            $record->save();
+                            Notification::make()
+                                ->title('Remote addon changed')
+                                ->body("{$record->details} remote addon changed to {$record->remoteAddon->details}")
+                                ->success()
+                                ->send();
+                        })
+                        ->icon('heroicon-o-arrows-right-left')
+                        ->label('Change Matching Remote Addon')
+                        ->modalHeading(fn (LocalAddon $record): string => "Change remote addon for {$record->details}"),
+                    Tables\Actions\Action::make('view_matching_addon')
+                        ->url(fn (LocalAddon $record): string => $record->remoteAddon?->url ?? '#')
+                        ->disabled(fn (LocalAddon $record): bool => is_null($record->remoteAddon))
+                        ->icon('heroicon-o-eye')
+                        ->label('View Matching Remote Addon')
+                        ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('download_matching_addon')
+                        ->url(fn (LocalAddon $localAddon) => $localAddon->remoteAddon->torrent ?? '#')
+                        ->disabled(fn (LocalAddon $localAddon): bool => is_null($localAddon->remoteAddon))
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->label('Download Matching Remote Addon')
+                        ->openUrlInNewTab(),
+                ])
+                ->color('grey')
+                ->dropdownWidth('sm'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+                Tables\Actions\BulkAction::make('download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('danger')
+                    ->action(function (ListLocalAddons $livewire, Collection $localAddons) {
+                        $localAddons->each(function (LocalAddon $localAddon) use ($livewire) {
+                            $livewire->js("window.open('" . ($localAddon->remoteAddon?->torrent ?? '#') . "', '_blank')");
+                        });
+                    }),
+            ])
+            ->checkIfRecordIsSelectableUsing(
+                fn (LocalAddon $record): bool => !is_null($record->remoteAddon)
+            );
     }
 
     public static function getPages(): array

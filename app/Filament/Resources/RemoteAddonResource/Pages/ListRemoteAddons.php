@@ -17,6 +17,7 @@ class ListRemoteAddons extends ListRecords
         return [
             Actions\Action::make('refresh')
                 ->label('Refresh')
+                ->tooltip('This will get the latest list of addons from the Simplaza website.')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
                     $updatedAddons = RemoteAddon::saveRemoteAddons();
