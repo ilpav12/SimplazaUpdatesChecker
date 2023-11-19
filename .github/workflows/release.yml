@@ -4,6 +4,8 @@ on:
     tags:
       - 'v*'
 
+name: Release
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -56,11 +58,8 @@ jobs:
           echo %CD%\..\bin\php.exe artisan serve >> start.bat
           echo start http://127.0.0.1:8000 >> start.bat
       - name: Create zip
-        run: |
-          zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
+        run: zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: simplaza-updates-checker.zip
-
-
