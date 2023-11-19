@@ -59,7 +59,7 @@ jobs:
           echo start http://127.0.0.1:8000 >> start.bat
       - name: Create zip
         run: zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
-      - name: Create Release
+      - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
           files: simplaza-updates-checker.zip
