@@ -1,10 +1,13 @@
+name: Release
+
 on:
   push:
     branches: [ 'release' ]
     tags:
       - 'v*'
 
-name: Release
+permissions:
+  contents: write
 
 jobs:
   release:
