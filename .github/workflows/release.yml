@@ -48,7 +48,7 @@ jobs:
           curl -s https://windows.php.net/downloads/releases/php-8.2.12-Win32-vs16-x64.zip --output php.zip
           unzip -q php.zip -d bin
           rm php.zip
-          cp resources\php.ini bin
+          cp ./resources/php.ini bin
       - name: Create start.bat
         run: |
           echo @echo off > start.bat
