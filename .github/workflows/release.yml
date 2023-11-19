@@ -1,0 +1,64 @@
+on:
+  push:
+    branches: [ 'release' ]
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: sqlite
+      - uses: actions/checkout@v3
+        with:
+          path: 'resources'
+      - name: Create Database
+        working-directory: ./resources
+        run: touch database/database.sqlite
+      - name: Install Dependencies
+        working-directory: ./resources
+        run: composer install --optimize-autoloader --no-dev
+      - name: Prepare Environment
+        working-directory: ./resources
+        run: |
+         php -r "file_exists('.env') || copy('.env.example', '.env');"
+         php artisan key:generate
+      - name: Directory Permissions
+        working-directory: ./resources
+        run: chmod -R 777 storage bootstrap/cache
+      - name: Migrate and Seed Database
+        working-directory: ./resources
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --force
+      - name: Cache Application
+        working-directory: ./resources
+        run: |
+          php artisan config:cache
+          php artisan event:cache
+          php artisan route:cache
+          php artisan view:cache
+      - name: Get PHP for Windows
+        run: |
+          mkdir bin
+          curl -s https://windows.php.net/downloads/releases/php-8.2.12-Win32-vs16-x64.zip --output php.zip
+          unzip -q php.zip -d bin
+          rm php.zip
+          cp resources\php.ini bin
+      - name: Create start.bat
+        run: |
+          echo @echo off > start.bat
+          echo cd resources >> start.bat
+          echo start http://127.0.0.1:8000 && %CD%\..\bin\php.exe artisan serve >> start.bat
+      - name: Create zip
+        run: |
+          zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: simplaza-updates-checker.zip
+
+
