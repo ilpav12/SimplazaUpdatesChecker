@@ -18,14 +18,15 @@ jobs:
       - name: Create Database
         working-directory: ./resources
         run: touch database/database.sqlite
+      - name: Prepare Environment
+        working-directory: ./resources
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
       - name: Install Dependencies
         working-directory: ./resources
         run: composer install --optimize-autoloader --no-dev
-      - name: Prepare Environment
+      - name: Generate Key
         working-directory: ./resources
-        run: |
-         php -r "file_exists('.env') || copy('.env.example', '.env');"
-         php artisan key:generate
+        run: php artisan key:generate
       - name: Directory Permissions
         working-directory: ./resources
         run: chmod -R 777 storage bootstrap/cache
