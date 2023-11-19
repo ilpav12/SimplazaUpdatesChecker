@@ -53,7 +53,8 @@ jobs:
         run: |
           echo @echo off > start.bat
           echo cd resources >> start.bat
-          echo start http://127.0.0.1:8000 && %CD%\..\bin\php.exe artisan serve >> start.bat
+          echo %CD%\..\bin\php.exe artisan serve >> start.bat
+          echo start http://127.0.0.1:8000 >> start.bat
       - name: Create zip
         run: |
           zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
