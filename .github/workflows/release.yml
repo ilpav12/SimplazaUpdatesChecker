@@ -2,7 +2,6 @@ name: Release
 
 on:
   push:
-    branches: [ 'release' ]
     tags:
       - 'v*'
 
@@ -40,13 +39,13 @@ jobs:
         run: |
           php artisan migrate --force
           php artisan db:seed --force
-      - name: Cache Application
-        working-directory: ./resources
-        run: |
-          php artisan config:cache
-          php artisan event:cache
-          php artisan route:cache
-          php artisan view:cache
+#      - name: Cache Application
+#        working-directory: ./resources
+#        run: |
+#          php artisan config:cache
+#          php artisan event:cache
+#          php artisan route:cache
+#          php artisan view:cache
       - name: Get PHP for Windows
         run: |
           mkdir bin
@@ -58,7 +57,7 @@ jobs:
         run: |
           echo @echo off > start.bat
           echo cd resources >> start.bat
-          echo %CD%\..\bin\php.exe artisan serve >> start.bat
+          echo %CD%/../bin/php.exe artisan serve >> start.bat
           echo start http://127.0.0.1:8000 >> start.bat
       - name: Create zip
         run: zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
