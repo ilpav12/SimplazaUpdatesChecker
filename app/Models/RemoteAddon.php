@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\IsRecommended;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -39,7 +40,8 @@ class RemoteAddon extends Model
 
     public static function getRemoteAddons(): Collection
     {
-        $response = Http::get("https://simplaza.org/torrent/rss.xml");
+        $client = new Client(['verify' => false]); // to avoid SSL error for missing certificate
+        $response = Http::setClient($client)->get("https://simplaza.org/torrent/rss.xml");
         $xmlContents = $response->body();
         $arrayContents = json_decode(json_encode(simplexml_load_string($xmlContents, options: LIBXML_NOCDATA)),true);
 
