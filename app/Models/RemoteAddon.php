@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class RemoteAddon extends Model
 {
@@ -79,20 +80,23 @@ class RemoteAddon extends Model
                 }
             }
 
-            $description = $warning = null;
-            $notePosition = strpos($addon['description'], 'Note: ');
-            if ($notePosition !== false) {
-                $description = substr($addon['description'], $notePosition + 6) . '<br><br>';
-            }
+            $warning = Str::of($addon['description'])
+                ->whenContains('Warning:', function ($string) {
+                    return $string
+                        ->between('</a><br><br>', 'Note:')
+                        ->finish('<br><br>');
+                })
+                ->whenExactly($addon['description'], fn () => false);
 
-            $warningPosition = strpos($addon['description'], 'Warning: ');
-            if ($warningPosition !== false) {
-                $warning = $notePosition === false
-                    ? substr($addon['description'], $warningPosition + 9) . '<br><br>'
-                    : substr($addon['description'], $warningPosition + 9, $notePosition - $warningPosition - 9);
-            }
+            $description = Str::of($addon['description'])
+                ->whenContains('Note:', function ($string) use ($warning) {
+                    return $string
+                        ->after($warning ?: '</a><br><br>')
+                        ->finish('<br><br>');
+                })
+                ->whenExactly($addon['description'], fn () => false);
 
-            if (!isset($warning)) {
+            if (is_null($warning)) {
                 $isRecommended = IsRecommended::NoConflicts;
             } else {
                 $pattern = '/\((.*) recommended\)/';
@@ -113,8 +117,8 @@ class RemoteAddon extends Model
                 'version' => $version,
                 'page' => $addon['link'],
                 'torrent' => $addon['enclosure']['@attributes']['url'],
-                'description' => $description ?? null,
-                'warning' => $warning ?? null,
+                'description' => $description ?: null,
+                'warning' => $warning ?: null,
                 'is_recommended' => $isRecommended,
                 'published_at' => date('Y-m-d H:i:s', strtotime($addon['pubDate'])),
             ]);

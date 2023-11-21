@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -41,7 +42,7 @@ class RemoteAddonResource extends Resource
                 Tables\Columns\TextColumn::make('is_recommended')
                     ->badge()
                     ->action(
-                        Tables\Actions\Action::make('warning')
+                        Tables\Actions\Action::make('recommendation')
                             ->icon('heroicon-o-exclamation-triangle')
                             ->color('danger')
                             ->disabled(fn (RemoteAddon $remoteAddon): bool => is_null($remoteAddon->warning))

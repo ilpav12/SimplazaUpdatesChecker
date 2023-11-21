@@ -112,6 +112,9 @@ class LocalAddon extends Model
             ->get();
 
         $allRemoteAddons = RemoteAddon::all();
+        if ($allRemoteAddons->isEmpty()) {
+            RemoteAddon::saveRemoteAddons();
+        }
 
         foreach ($localAddons as $localAddon) {
             $cleanLocalAuthor = strtolower(str_replace(' ', '', $localAddon->author));
