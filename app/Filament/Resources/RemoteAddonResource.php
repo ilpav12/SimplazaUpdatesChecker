@@ -32,6 +32,26 @@ class RemoteAddonResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->icon(fn (RemoteAddon $remoteAddon): ?string => is_null($remoteAddon->description) ? null : 'heroicon-o-information-circle')
+                    ->iconPosition(IconPosition::After)
+                    ->iconColor('info')
+                    ->action(
+                        Tables\Actions\Action::make('info')
+                            ->icon('heroicon-o-information-circle')
+                            ->color('info')
+                            ->disabled(fn(RemoteAddon $remoteAddon): bool => is_null($remoteAddon->description))
+                            ->hidden(fn(RemoteAddon $remoteAddon): bool => is_null($remoteAddon->description))
+                            ->requiresConfirmation()
+                            ->modalDescription(fn(RemoteAddon $remoteAddon): HtmlString => new HtmlString($remoteAddon->description))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                            ->modalAlignment(Alignment::Left)
+                    )
+                    ->extraAttributes(
+                        fn (RemoteAddon $remoteAddon): array => is_null($remoteAddon->description)
+                            ? ['class' => 'cursor-default']
+                            : []
+                    )
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('author')
@@ -80,15 +100,6 @@ class RemoteAddonResource extends Resource
                     ->label('Recommendation'),
             ])
             ->actions([
-                Tables\Actions\Action::make('info')
-                    ->icon('heroicon-o-information-circle')
-                    ->color('info')
-                    ->disabled(fn (RemoteAddon $remoteAddon): bool => is_null($remoteAddon->description))
-                    ->requiresConfirmation()
-                    ->modalDescription(fn (RemoteAddon $remoteAddon): HtmlString => new HtmlString($remoteAddon->description))
-                    ->modalSubmitAction(false)
-                    ->modalCancelAction(false)
-                    ->modalAlignment(Alignment::Left),
                 Tables\Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->color('gray')
@@ -113,6 +124,7 @@ class RemoteAddonResource extends Resource
             ->emptyStateActions([
                 //
             ])
+            ->recordUrl(null)
             ->modifyQueryUsing(fn (Builder $query) => $query->orderBy('published_at', 'desc'));
     }
 

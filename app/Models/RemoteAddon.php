@@ -57,11 +57,10 @@ class RemoteAddon extends Model
         foreach ($arrayContents['channel']['item'] as $addon) {
             $textContents = $addon['title'];
 
-            $pattern = '/(.*) - (.*)/';
-            preg_match($pattern, $textContents, $match);
+            $textContents = explode(' - ', $textContents);
 
-            $author = $match[1];
-            $title = $match[2];
+            $author = $textContents[0];
+            $title = implode(' - ', array_slice($textContents, 1));
             $version = "No version";
 
             $words = explode(' ', $title);
@@ -96,7 +95,7 @@ class RemoteAddon extends Model
                 })
                 ->whenExactly($addon['description'], fn () => false);
 
-            if (is_null($warning)) {
+            if (!$warning) {
                 $isRecommended = IsRecommended::NoConflicts;
             } else {
                 $pattern = '/\((.*) recommended\)/';

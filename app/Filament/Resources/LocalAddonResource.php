@@ -13,6 +13,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\Alignment;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,6 +34,19 @@ class LocalAddonResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
+                    ->icon(fn (LocalAddon $localAddon): ?string => is_null($localAddon->remoteAddon?->description) ? null : 'heroicon-o-information-circle')
+                    ->iconPosition(IconPosition::After)
+                    ->iconColor('info')
+                    ->action(
+//                        if ()
+
+                        null
+                    )
+//                    ->extraAttributes(
+//                        fn (LocalAddon $localAddon): array => is_null($localAddon->remoteAddon?->description)
+//                            ? ['class' => 'cursor-default']
+//                            : []
+//                    )
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('author')

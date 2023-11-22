@@ -33,7 +33,8 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
             self::FullyRecommended => 'success',
             self::PartiallyRecommended => 'warning',
             self::NotRecommended => 'danger',
-            self::NoRecommendation, self::NoConflicts => 'gray',
+            self::NoRecommendation => 'info',
+            self::NoConflicts => 'gray',
         };
     }
 
