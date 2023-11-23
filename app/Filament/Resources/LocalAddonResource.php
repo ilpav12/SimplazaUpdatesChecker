@@ -138,13 +138,7 @@ class LocalAddonResource extends Resource
                 Tables\Filters\Filter::make('is_recommended')
                     ->form([
                         Forms\Components\Select::make('is_recommended')
-                            ->options([
-                                'fully' => 'Fully Recommended',
-                                'partially' => 'Partially Recommended',
-                                'not' => 'Not Recommended',
-                                'none' => 'No Recommendation',
-                                'zero' => 'No Conflicts',
-                            ])
+                            ->options(IsRecommended::toArray())
                             ->placeholder('Any')
                             ->label('Recommendation'),
                     ])
@@ -158,6 +152,13 @@ class LocalAddonResource extends Resource
                                         return $query->where('is_recommended', $isRecommended);
                                 });
                         });
+                    })
+                    ->indicateUsing(function (array $data): ?string {
+                        if (!$data['is_recommended']) {
+                            return null;
+                        }
+
+                        return 'Recommendation: ' . IsRecommended::from($data['is_recommended'])->getLabel();
                     })
                     ->label('Recommendation'),
             ])
@@ -186,7 +187,7 @@ class LocalAddonResource extends Resource
                         ->label('Change Matching Remote Addon')
                         ->modalHeading(fn (LocalAddon $record): string => "Change remote addon for {$record->details}"),
                     Tables\Actions\Action::make('view_matching_addon')
-                        ->url(fn (LocalAddon $record): string => $record->remoteAddon?->url ?? '#')
+                        ->url(fn (LocalAddon $record): string => $record->remoteAddon?->page ?? '#')
                         ->disabled(fn (LocalAddon $record): bool => is_null($record->remoteAddon))
                         ->icon('heroicon-o-eye')
                         ->label('View Matching Remote Addon')

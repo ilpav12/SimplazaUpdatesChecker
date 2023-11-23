@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\IsRecommended;
 use App\Filament\Resources\RemoteAddonResource\Pages;
 use App\Filament\Resources\RemoteAddonResource\Pages\ListRemoteAddons;
 use App\Filament\Resources\RemoteAddonResource\RelationManagers;
@@ -89,13 +90,8 @@ class RemoteAddonResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('is_recommended')
-                    ->options([
-                        'fully' => 'Fully Recommended',
-                        'partially' => 'Partially Recommended',
-                        'not' => 'Not Recommended',
-                        'none' => 'No Recommendation',
-                        'zero' => 'No Conflicts',
-                    ])
+                    ->options(IsRecommended::toArray())
+                    ->indicator('Recommendation')
                     ->placeholder('Any')
                     ->label('Recommendation'),
             ])

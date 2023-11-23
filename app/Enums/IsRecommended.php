@@ -14,6 +14,17 @@ enum IsRecommended: string implements HasLabel, HasColor, HasIcon
     case NoRecommendation = 'none';
     case NoConflicts = 'zero';
 
+    public static function toArray(): array
+    {
+        return [
+            'fully' => 'Fully Recommended',
+            'partially' => 'Partially Recommended',
+            'not' => 'Not Recommended',
+            'none' => 'No Recommendation',
+            'zero' => 'No Conflicts',
+        ];
+    }
+
 
     public function getLabel(): ?string
     {
