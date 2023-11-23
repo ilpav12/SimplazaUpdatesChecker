@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class LocalAddon extends Model
 {
@@ -129,14 +130,18 @@ class LocalAddon extends Model
         }
 
         foreach ($localAddons as $localAddon) {
-            $cleanLocalAuthor = strtolower(str_replace(' ', '', $localAddon->author));
+            $cleanLocalAuthor = Str::of($localAddon->author)
+                ->replaceMatches('/[^A-Za-z0-9]++/', '')
+                ->lower();
             $remoteAddons = $allRemoteAddons->filter(function ($remoteAddon) use ($localAddon, $cleanLocalAuthor) {
                 if (version_compare(rtrim($remoteAddon->version, ".0"), rtrim($localAddon->version, ".0"), '<')) {
                     return false;
                 }
 
-                $cleanRemoteAuthor = strtolower(str_replace(' ', '', $remoteAddon->author));
-                if ($cleanRemoteAuthor != $cleanLocalAuthor && !str_contains($cleanRemoteAuthor, $cleanLocalAuthor) && !str_contains($cleanLocalAuthor, $cleanRemoteAuthor)) {
+                $cleanRemoteAuthor = Str::of($remoteAddon->author)
+                    ->replaceMatches('/[^A-Za-z0-9]++/', '')
+                    ->lower();
+                if (!$cleanRemoteAuthor->contains($cleanLocalAuthor) && !$cleanLocalAuthor->contains($cleanRemoteAuthor)) {
                     return false;
                 }
 
@@ -144,10 +149,14 @@ class LocalAddon extends Model
             });
 
 
-            $cleanLocalTitle = strtolower(str_replace(' ', '', $localAddon->title));
+            $cleanLocalTitle = Str::of($localAddon->title)
+                ->replaceMatches('/[^A-Za-z0-9]++/', '')
+                ->lower();
             $remoteAddon = $remoteAddons->reduce(function ($carry, $remoteAddon) use ($localAddon, $cleanLocalTitle) {
-                $cleanRemoteTitle = strtolower(str_replace(' ', '', $remoteAddon->title));
-                if ($cleanRemoteTitle == $cleanLocalTitle || str_contains($cleanRemoteTitle, $cleanLocalTitle) || str_contains($cleanLocalTitle, $cleanRemoteTitle)) {
+                $cleanRemoteTitle = Str::of($remoteAddon->title)
+                    ->replaceMatches('/[^A-Za-z0-9]++/', '')
+                    ->lower();
+                if ($cleanLocalTitle->contains($cleanRemoteTitle) || $cleanRemoteTitle->contains($cleanLocalTitle)) {
                     $carry['distance'] = 0;
                     $carry['remoteAddon'] = $remoteAddon;
                     return $carry;
@@ -163,7 +172,6 @@ class LocalAddon extends Model
 
             if ($remoteAddon) {
                 $localAddon->remote_addon_id = $remoteAddon->id;
-                $localAddon->is_updated = version_compare(rtrim($localAddon->version, ".0"), rtrim($remoteAddon->version, ".0"), '>=');
                 $localAddon->save();
             }
         }
