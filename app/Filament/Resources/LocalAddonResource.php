@@ -38,15 +38,22 @@ class LocalAddonResource extends Resource
                     ->iconPosition(IconPosition::After)
                     ->iconColor('info')
                     ->action(
-//                        if ()
-
-                        null
+                        Tables\Actions\Action::make('info')
+                            ->icon('heroicon-o-information-circle')
+                            ->color('info')
+                            ->disabled(fn (LocalAddon $localAddon): bool => is_null($localAddon->remoteAddon?->description))
+                            ->hidden(fn (LocalAddon $localAddon): bool => is_null($localAddon->remoteAddon?->description))
+                            ->requiresConfirmation()
+                            ->modalDescription(fn (LocalAddon $localAddon): HtmlString => new HtmlString($localAddon->remoteAddon?->description))
+                            ->modalSubmitAction(false)
+                            ->modalCancelAction(false)
+                            ->modalAlignment(Alignment::Left)
                     )
-//                    ->extraAttributes(
-//                        fn (LocalAddon $localAddon): array => is_null($localAddon->remoteAddon?->description)
-//                            ? ['class' => 'cursor-default']
-//                            : []
-//                    )
+                    ->extraAttributes(
+                        fn (LocalAddon $localAddon): array => is_null($localAddon->remoteAddon?->description)
+                            ? ['class' => 'cursor-default']
+                            : []
+                    )
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('author')
@@ -66,17 +73,15 @@ class LocalAddonResource extends Resource
                 Tables\Columns\TextColumn::make('path')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('is_updated')
-                    ->default('')
                     ->icon(fn (bool|string $state): string => match ($state) {
                         true => 'heroicon-o-check-circle',
                         false => 'heroicon-o-x-circle',
-                        default => 'heroicon-o-question-mark-circle',
                     })
                     ->color(fn (bool|string $state): string => match ($state) {
                         true => 'success',
                         false => 'danger',
-                        default => 'info',
-                    }),
+                    })
+                    ->placeholder('Choose a matching addon'),
                 Tables\Columns\ToggleColumn::make('is_excluded'),
                 Tables\Columns\TextColumn::make('remoteAddon.is_recommended')
                     ->badge()
@@ -106,7 +111,25 @@ class LocalAddonResource extends Resource
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_excluded')
                     ->default(false),
-                Tables\Filters\TernaryFilter::make('is_updated'),
+                Tables\Filters\TernaryFilter::make('is_updated')
+                    ->queries(
+                        true: function (Builder $query) {
+                            return $query->whereExists(function (\Illuminate\Database\Query\Builder $query) {
+                                return $query->select('*')
+                                    ->from('remote_addons')
+                                    ->whereColumn('remote_addons.id', 'local_addons.remote_addon_id')
+                                    ->whereRaw("rtrim(remote_addons.version, '.0') <= rtrim(local_addons.version, '.0')");
+                            });
+                        },
+                        false: function (Builder $query) {
+                            return $query->whereExists(function (\Illuminate\Database\Query\Builder $query) {
+                                return $query->select('*')
+                                    ->from('remote_addons')
+                                    ->whereColumn('remote_addons.id', 'local_addons.remote_addon_id')
+                                    ->whereRaw("rtrim(remote_addons.version, '.0') > rtrim(local_addons.version, '.0')");
+                            });
+                        },
+                    ),
                 Tables\Filters\TernaryFilter::make('is_matched')
                     ->queries(
                         true: fn (Builder $query) => $query->whereHas('remoteAddon'),
@@ -152,7 +175,6 @@ class LocalAddonResource extends Resource
                         ])
                         ->action(function (array $data, LocalAddon $record): void {
                             $record->remote_addon_id = $data['remote_addon_id'];
-                            $record->is_updated = version_compare(rtrim($record->version, ".0"), rtrim($record->remoteAddon->version, ".0"), '>=');
                             $record->save();
                             Notification::make()
                                 ->title('Remote addon changed')

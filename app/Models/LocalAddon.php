@@ -21,8 +21,11 @@ class LocalAddon extends Model
     ];
 
     protected $casts = [
-        'is_updated' => 'boolean',
         'is_excluded' => 'boolean',
+    ];
+
+    protected $appends = [
+        'is_updated',
     ];
 
     public function remoteAddon(): \Illuminate\Database\Eloquent\Relations\belongsTo
@@ -33,6 +36,15 @@ class LocalAddon extends Model
     public function getDetailsAttribute(): string
     {
         return "$this->author - $this->title";
+    }
+
+    public function getIsUpdatedAttribute(): ?bool
+    {
+        if (is_null($this->remoteAddon)) {
+            return null;
+        }
+
+        return version_compare(rtrim($this->version, ".0"), rtrim($this->remoteAddon->version, ".0"), '>=');
     }
 
     public static function getLocalAddons($folders, $addons = null): Collection
