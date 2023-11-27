@@ -164,6 +164,10 @@ class LocalAddonResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('show_in_explorer')
+                        ->action(fn (LocalAddon $record) => exec("explorer.exe /select, $record->path"))
+                        ->icon('heroicon-o-folder-open')
+                        ->label('Show in Explorer'),
                     Tables\Actions\Action::make('change_matching_addon')
                         ->form([
                             Forms\Components\Select::make('remote_addon_id')
@@ -198,6 +202,32 @@ class LocalAddonResource extends Resource
                         ->icon('heroicon-o-arrow-down-tray')
                         ->label('Download Matching Remote Addon')
                         ->openUrlInNewTab(),
+                    Tables\Actions\Action::make('delete')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalDescription(fn (LocalAddon $record): HtmlString => new HtmlString("Are you sure you want to delete <b>$record->details</b>?"))
+                        ->modalSubmitActionLabel('Delete')
+                        ->action(function (LocalAddon $record): void {
+                            exec("rmdir /s /q $record->path");
+
+                            if (LocalAddon::getLocalAddons($record->path)->count() > 0) {
+                                Notification::make()
+                                    ->title('Error deleting local addon')
+                                    ->body(new HtmlString("<b>$record->details</b> not deleted, please try again."))
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            $record->delete();
+                            Notification::make()
+                                ->title('Local addon deleted')
+                                ->body(new HtmlString("<b>$record->details</b> deleted successfully."))
+                                ->success()
+                                ->send();
+                        })
+                        ->label('Delete Local Addon'),
                 ])
                 ->color('grey')
                 ->dropdownWidth('sm'),
