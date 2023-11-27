@@ -8,3 +8,9 @@ Additionally, it provides the capability for users to check the recommendations 
 2. Extract the archive in a folder of your choice.
 3. Run the `start.bat` file which will open a terminal window where it initializes the application and a browser window.
 4. Wait for the application to finish initializing, and it will be available in the opened window.
+
+## Disclaimer
+This application is not affiliated with simplaza.org in any way.  
+It is a tool to help users manage their addons more easily.  
+The content hosted on simplaza.org or downloaded through this application is not under my control or responsibility.  
+Please read the license for more details before using this application.
