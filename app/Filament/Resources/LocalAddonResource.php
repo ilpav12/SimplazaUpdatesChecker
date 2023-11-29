@@ -209,9 +209,9 @@ class LocalAddonResource extends Resource
                         ->modalDescription(fn (LocalAddon $record): HtmlString => new HtmlString("Are you sure you want to delete <b>$record->details</b>?"))
                         ->modalSubmitActionLabel('Delete')
                         ->action(function (LocalAddon $record): void {
-                            exec("rmdir /s /q $record->path");
+                            exec("rmdir /s /q " . escapeshellarg($record->path), result_code:  $return_var);
 
-                            if (LocalAddon::getLocalAddons($record->path)->count() > 0) {
+                            if ($return_var != 0) {
                                 Notification::make()
                                     ->title('Error deleting local addon')
                                     ->body(new HtmlString("<b>$record->details</b> not deleted, please try again."))
