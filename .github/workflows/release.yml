@@ -19,47 +19,45 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: 'resources'
-      - name: Create Database
-        working-directory: ./resources
-        run: touch database/database.sqlite
-      - name: Prepare Environment
-        working-directory: ./resources
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-      - name: Install Dependencies
-        working-directory: ./resources
-        run: composer install --optimize-autoloader --no-dev
-      - name: Generate Key
-        working-directory: ./resources
-        run: php artisan key:generate
-      - name: Directory Permissions
-        working-directory: ./resources
-        run: chmod -R 777 storage bootstrap/cache
-      - name: Migrate and Seed Database
-        working-directory: ./resources
-        run: |
-          php artisan migrate --force
-          php artisan db:seed --force
-#      - name: Cache Application
-#        working-directory: ./resources
-#        run: |
-#          php artisan config:cache
-#          php artisan event:cache
-#          php artisan route:cache
-#          php artisan view:cache
       - name: Get PHP for Windows
         run: |
           mkdir bin
+          cd bin
+          mkdir php
           version=$(curl -s https://windows.php.net/downloads/releases/ | grep -oP 'php-8\.1\.\d+-nts-Win32-vs16-x64.zip' | head -1)
           curl -s https://windows.php.net/downloads/releases/$version --output php.zip
-          unzip -q php.zip -d bin
+          unzip -q php.zip -d php
           rm php.zip
-          cp ./resources/php.ini bin
+          cp ../../resources/php.ini php
+      - name: Get Composer
+        run: |
+          mkdir bin/composer
+          php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+          php -r "if (hash_file('sha384', 'composer-setup.php') === 'e21205b207c3ff031906575712edab6f13eb0b361f2085f1f1237b7126d785e826a450292b6cfd1d64d92e6563bbde02') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+          php composer-setup.php --install-dir=bin/composer
+          php -r "unlink('composer-setup.php');"
+      - name: Create install.bat
+        run: |
+          echo @echo off > install.bat
+          echo cd resources >> install.bat
+          echo %CD%/../bin/php/php.exe -r "file_exists('.env') || copy('.env.example', '.env');" >> install.bat
+          echo mkdir %appdata%\SimplazaUpdatesChecker >> install.bat
+          echo type nul > %appdata%\SimplazaUpdatesChecker\database.sqlite >> install.bat
+          echo %CD%/../bin/php/php.exe artisan migrate --seed --force >> install.bat
+          echo %CD%/../bin/php/php.exe ../bin/composer/composer.phar install --optimize-autoloader --no-dev >> install.bat
+          echo %CD%/../bin/php/php.exe artisan key:generate --force >> install.bat
+          echo %CD%/../bin/php/php.exe artisan config:cache >> install.bat
+          echo %CD%/../bin/php/php.exe artisan event:cache >> install.bat
+          echo %CD%/../bin/php/php.exe artisan route:cache >> install.bat
+          echo %CD%/../bin/php/php.exe artisan icons:cache >> install.bat
+          echo "echo Installation completed successfully!" >> install.bat
+          echo pause >> install.bat
       - name: Create start.bat
         run: |
           echo @echo off > start.bat
           echo cd resources >> start.bat
           echo start http://127.0.0.1:8000 >> start.bat
-          echo %CD%/../bin/php.exe artisan serve >> start.bat
+          echo %CD%/../bin/php/php.exe artisan serve >> start.bat
       - name: Create zip
         run: zip -r -q simplaza-updates-checker.zip start.bat resources bin -x *.git*
       - name: Publish Release

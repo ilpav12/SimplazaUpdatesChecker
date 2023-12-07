@@ -6,7 +6,8 @@ Additionally, it provides the capability for users to check the recommendations 
 ## Installation and usage
 1. Download the latest release from the [releases page](https://github.com/ilpav12/SimplazaUpdatesChecker/releases).
 2. Extract the archive in a folder of your choice.
-3. Run the `start.bat` file which will open a terminal window where it initializes the application and a browser window.
+3. Install the application by running `install.bat`.
+4. Start the application by running the `start.bat` file which will open a terminal window where it initializes the application and a browser window.
 4. Wait for the application to finish initializing, and it will be available in the opened window.
 
 ## Disclaimer
