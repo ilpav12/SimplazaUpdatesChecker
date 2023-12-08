@@ -28,7 +28,7 @@ jobs:
           curl -s https://windows.php.net/downloads/releases/$version --output php.zip
           unzip -q php.zip -d php
           rm php.zip
-          cp ../../resources/php.ini php
+          cp ./../../resources/php.ini php
       - name: Get Composer
         run: |
           mkdir bin/composer
