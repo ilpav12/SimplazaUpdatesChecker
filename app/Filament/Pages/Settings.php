@@ -28,7 +28,8 @@ class Settings extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'addons_paths' => config('settings.addons_paths'),
+            'community_folder' => config('settings.community_folder'),
+            'addons_folders' => config('settings.addons_folders'),
         ]);
     }
 
@@ -36,9 +37,12 @@ class Settings extends Page implements HasForms
     {
         return $form
             ->schema([
-                Forms\Components\Repeater::make('addons_paths')
+                Forms\Components\TextInput::make('community_folder')
+                    ->rules([new ValidPath()])
+                    ->required(),
+                Forms\Components\Repeater::make('addons_folders')
                     ->simple(
-                        Forms\Components\TextInput::make('path')
+                        Forms\Components\TextInput::make('folder')
                             ->rules([new ValidPath()])
                             ->required(),
                     )
@@ -64,8 +68,13 @@ class Settings extends Page implements HasForms
             $this->form->validate($data);
 
             Setting::updateOrCreate(
-                ['name' => 'addons_paths'],
-                ['value' => $data['addons_paths']]
+                ['name' => 'community_folder'],
+                ['value' => $data['community_folder']]
+            );
+
+            Setting::updateOrCreate(
+                ['name' => 'addons_folders'],
+                ['value' => $data['addons_folders']]
             );
         } catch (Halt $exception) {
             return;

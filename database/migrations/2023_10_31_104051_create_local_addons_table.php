@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('path')->unique();
             $table->foreignId('remote_addon_id')->nullable()->constrained()->cascadeOnUpdate()->nullOnDelete();
             $table->boolean('is_excluded')->default(false);
+            $table->string('is_in_community_folder');
             $table->timestamps();
         });
     }

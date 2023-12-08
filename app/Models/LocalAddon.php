@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\IsInCommunityFolder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use function Sodium\add;
 
 class LocalAddon extends Model
 {
@@ -19,10 +21,12 @@ class LocalAddon extends Model
         'remote_addon_id',
         'is_updated',
         'is_excluded',
+        'is_in_community_folder',
     ];
 
     protected $casts = [
         'is_excluded' => 'boolean',
+        'is_in_community_folder' => IsInCommunityFolder::class,
     ];
 
     protected $appends = [
@@ -48,35 +52,55 @@ class LocalAddon extends Model
         return version_compare(rtrim($this->version, ".0"), rtrim($this->remoteAddon->version, ".0"), '>=');
     }
 
-    public static function getLocalAddons($folders, $addons = null): Collection
+    private static function createLocalAddon($folder, $isSimlinked = false): array
     {
-        if ($addons == null) {
-            $addons = collect();
+        $manifest = json_decode(file_get_contents($folder . "/manifest.json"));
+
+        if ($isSimlinked) {
+            $isInCommunityFolder = IsInCommunityFolder::Symlinked;
+        } elseif (Str::startsWith($folder, config('settings.community_folder'))) {
+            $isInCommunityFolder = IsInCommunityFolder::Inside;
+        } else {
+            $isInCommunityFolder = IsInCommunityFolder::Outside;
         }
 
+        $addon = [
+            'author' => $manifest->author ?? $manifest->creator ?? 'No author',
+            'title' => $manifest->title ?? 'No title',
+            'version' => $manifest->version ?? $manifest->package_version ?? 'No version',
+            'path' => $folder,
+            'is_in_community_folder' => $isInCommunityFolder,
+        ];
+        if (str_contains($addon['title'], "AIRAC Cycle")) {
+            $addon['version'] = str_replace(["AIRAC Cycle ", "."], ["", " "], $addon['title']);
+        }
+        return $addon;
+    }
+
+    private static function getLocalAddons($folders, $addons = null): array
+    {
+        $addons ??= [];
+
         if (is_array($folders)) {
-            foreach($folders as $folder) {
-                $addons = self::getLocalAddons($folder, $addons);
+            foreach ($folders as $folder) {
+                return self::getLocalAddons($folder, $addons);
             }
-            return $addons;
         }
         $folder = $folders;
 
         foreach (array_diff(scandir($folder), array('..', '.')) as $item) {
-            if (file_exists($folder . "/manifest.json")) {
-                $manifest = json_decode(file_get_contents($folder . "/manifest.json"));
-
-                $addon = collect([
-                    'author' => $manifest->author ?? $manifest->creator ?? 'No author',
-                    'title' => $manifest->title ?? 'No title',
-                    'version' => $manifest->version ?? $manifest->package_version ?? 'No version',
-                    'path' => $folder,
-                ]);
-                if (str_contains($addon['title'], "AIRAC Cycle")) {
-                    $addon['version'] = str_replace(["AIRAC Cycle ", "."], ["", " "], $addon['title']);
+            if (is_link($folder)) {
+                $pointingAddon = LocalAddon::where('path', readlink($folder))->first();
+                if ($pointingAddon) {
+                    $pointingAddon->update(['is_in_community_folder' => IsInCommunityFolder::Symlinked]);
+                } else {
+                    $addons[] = self::createLocalAddon($folder, true);
                 }
-                $addons->push($addon);
+                break;
+            }
 
+            if (file_exists($folder . "/manifest.json")) {
+                $addons[] = self::createLocalAddon($folder);
                 break;
             }
 
@@ -88,12 +112,15 @@ class LocalAddon extends Model
         return $addons;
     }
 
-    public static function saveLocalAddons($folders): void
+    public static function saveLocalAddons($communityFolder, $addonsFolders): void
     {
-        $newLocalAddons = self::getLocalAddons($folders);
+        $newLocalAddons = empty($addonsFolders)
+            ? []
+            : self::getLocalAddons($addonsFolders);
+        $newLocalAddons += self::getLocalAddons($communityFolder);
         $oldLocalAddons = self::all();
         if ($oldLocalAddons->isEmpty()) {
-            self::insert($newLocalAddons->toArray());
+            self::insert($newLocalAddons);
             return;
         }
 
@@ -110,6 +137,7 @@ class LocalAddon extends Model
             );
         }
 
+        $newLocalAddons = collect($newLocalAddons);
         foreach ($oldLocalAddons as $oldLocalAddon) {
             if (!$newLocalAddons->contains('path', $oldLocalAddon->path)) {
                 $oldLocalAddon->delete();

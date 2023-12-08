@@ -83,6 +83,7 @@ class LocalAddonResource extends Resource
                     })
                     ->placeholder('Choose a matching addon'),
                 Tables\Columns\ToggleColumn::make('is_excluded'),
+                Tables\Columns\TextColumn::make('is_in_community_folder'),
                 Tables\Columns\TextColumn::make('remoteAddon.is_recommended')
                     ->badge()
                     ->action(

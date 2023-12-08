@@ -26,17 +26,17 @@ class ListLocalAddons extends ListRecords
                 ->tooltip('This will get the latest list of addons from the paths configured in the settings page.')
                 ->icon('heroicon-o-arrow-path')
                 ->action(function () {
-                    $addonsPaths = config('settings.addons_paths');
-                    if (empty($addonsPaths)) {
-                        Notification::make('missing_addons_paths')
-                            ->title('Missing addons paths')
-                            ->body(new HtmlString('Please add at least one addons path in the <a href="' . route('filament.admin.pages.settings') . '" style="text-decoration: underline">settings page</a>.'))
+                    $communityFolder = config('settings.community_folder');
+                    if (empty($communityFolder)) {
+                        Notification::make('missing_community_folder')
+                            ->title('Missing community folder')
+                            ->body(new HtmlString('Please add the community folder path in the <a href="' . route('filament.admin.pages.settings') . '" style="text-decoration: underline">settings page</a>.'))
                             ->danger()
                             ->persistent()
                             ->send();
                         return;
                     }
-                    LocalAddon::saveLocalAddons($addonsPaths);
+                    LocalAddon::saveLocalAddons($communityFolder, config('settings.addons_folders'));
                 }),
         ];
     }
