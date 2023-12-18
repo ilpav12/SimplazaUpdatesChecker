@@ -40,7 +40,7 @@ jobs:
         run: |
           echo @echo off > install.bat
           echo cd resources >> install.bat
-          echo %CD%/../bin/php/php.exe -r "file_exists('.env') || copy('.env.example', '.env');" >> install.bat
+          echo "%CD%/../bin/php/php.exe -r \"file_exists('.env') || copy('.env.example', '.env');\"" >> install.bat
           echo "mkdir %appdata%\SimplazaUpdatesChecker" >> install.bat
           echo "type nul > %appdata%\SimplazaUpdatesChecker\database.sqlite" >> install.bat
           echo %CD%/../bin/php/php.exe artisan migrate --seed --force >> install.bat
