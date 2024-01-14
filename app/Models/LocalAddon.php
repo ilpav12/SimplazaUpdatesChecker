@@ -133,6 +133,7 @@ class LocalAddon extends Model
                     'title' => $localAddon['title'],
                     'author' => $localAddon['author'],
                     'version' => $localAddon['version'],
+                    'is_in_community_folder' => $localAddon['is_in_community_folder'],
                 ]
             );
         }
