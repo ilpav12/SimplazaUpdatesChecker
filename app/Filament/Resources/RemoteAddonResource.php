@@ -10,6 +10,7 @@ use App\Models\RemoteAddon;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\IconPosition;
@@ -31,6 +32,8 @@ class RemoteAddonResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->description('Last check: ' . cache('lastCheck'))
+            ->poll('1s')    // trick force to update the description
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->icon(fn (RemoteAddon $remoteAddon): ?string => is_null($remoteAddon->description) ? null : 'heroicon-o-information-circle')
@@ -115,6 +118,21 @@ class RemoteAddonResource extends Resource
                         $remoteAddons->each(function (RemoteAddon $remoteAddon) use ($livewire) {
                             $livewire->js("window.open('$remoteAddon->torrent', '_blank')");
                         });
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('refresh')
+                    ->label('Refresh')
+                    ->tooltip('This will get the latest list of addons from the Simplaza website.')
+                    ->icon('heroicon-o-arrow-path')
+                    ->action(function () {
+                        $updatedAddons = RemoteAddon::saveRemoteAddons();
+                        Notification::make()
+                            ->title($updatedAddons == 0
+                                ? 'All addons are up to date'
+                                : "$updatedAddons addons have been updated")
+                            ->success()
+                            ->send();
                     }),
             ])
             ->emptyStateActions([

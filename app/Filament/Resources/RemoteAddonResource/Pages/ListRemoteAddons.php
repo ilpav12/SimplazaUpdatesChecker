@@ -11,23 +11,4 @@ use Filament\Resources\Pages\ListRecords;
 class ListRemoteAddons extends ListRecords
 {
     protected static string $resource = RemoteAddonResource::class;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\Action::make('refresh')
-                ->label('Refresh')
-                ->tooltip('This will get the latest list of addons from the Simplaza website.')
-                ->icon('heroicon-o-arrow-path')
-                ->action(function () {
-                    $updatedAddons = RemoteAddon::saveRemoteAddons();
-                    Notification::make()
-                        ->title($updatedAddons == 0
-                            ? 'All addons are up to date'
-                            : "$updatedAddons addons have been updated")
-                        ->success()
-                        ->send();
-                }),
-        ];
-    }
 }

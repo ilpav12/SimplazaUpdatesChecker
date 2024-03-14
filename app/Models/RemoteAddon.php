@@ -45,12 +45,13 @@ class RemoteAddon extends Model
         $response = Http::setClient($client)->get("https://simplaza.org/torrent/rss.xml");
         $xmlContents = $response->body();
         $arrayContents = json_decode(json_encode(simplexml_load_string($xmlContents, options: LIBXML_NOCDATA)),true);
+        cache(['lastCheck' => now()], now()->addYears(10));
 
         $lastBuildDate = date('Y-m-d H:i:s', strtotime($arrayContents['channel']['lastBuildDate']));
         if (cache('lastBuildDate') == $lastBuildDate) {
             return collect();
         }
-        cache(['lastBuildDate' => $lastBuildDate], 60*24);
+        cache(['lastBuildDate' => $lastBuildDate], now()->addYears(10));
 
         $addons = collect();
 
